@@ -193,6 +193,31 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
 #gate input:focus{outline:none;border-color:var(--gold-dp)}
 #gate button{width:100%;margin-top:12px;background:linear-gradient(180deg,var(--gold-br),var(--gold));color:#1a1407;border:0;border-radius:10px;padding:12px;font-weight:700;font-size:14px;cursor:pointer;font-family:var(--sans)}
 #gate .err{color:var(--bad);font-size:12px;height:16px;margin-top:10px}
+/* monthly goal widget */
+.goalw{margin-bottom:18px}
+.goalw .gcard{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-bottom:14px}
+.goalw .ghead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.goalw .ghead h2{font-family:var(--serif);font-size:16px;color:var(--gold-br);margin:0}
+.goalw .ghead .gmo{font-size:12px;color:var(--mut)}
+.goalw .gbig{font-size:32px;font-weight:800;color:var(--gold-br);line-height:1;display:inline-block}
+.goalw .gof{font-size:14px;color:var(--mut);margin-left:8px}
+.goalw .gbar{position:relative;height:26px;background:#1a1a1f;border-radius:13px;overflow:hidden;margin:14px 0 6px}
+.goalw .gfill{height:100%;background:linear-gradient(90deg,var(--gold-dp),var(--gold-br));border-radius:13px;transition:width .8s ease}
+.goalw .gpct{position:absolute;top:5px;left:12px;font-size:12px;font-weight:700;color:var(--txt)}
+.goalw .gk{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.goalw .gk .kpi{background:#0e0e12;border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.goalw .gk .kpi .lbl{font-size:9px;letter-spacing:1.1px;text-transform:uppercase;color:var(--mut);margin-bottom:5px}
+.goalw .gk .kpi .val{font-size:18px;font-weight:700;color:var(--gold-br)}
+.goalw .gk .kpi .val.pos{color:var(--ok)} .goalw .gk .kpi .val.neg{color:var(--bad)}
+.goalw .gtrend{position:relative;height:180px;display:flex;align-items:flex-end;gap:10px;padding-top:14px}
+.goalw .gline{position:absolute;top:14px;left:0;right:0;border-top:1px dashed var(--gold-dp)}
+.goalw .gline span{position:absolute;right:0;top:-15px;font-size:10px;color:var(--gold-dp)}
+.goalw .gcol{flex:1;display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end}
+.goalw .gstack{width:100%;height:100%;position:relative;display:flex;flex-direction:column;justify-content:flex-end}
+.goalw .gghost{position:absolute;top:0;left:0;width:100%;height:100%;background:#242430;border-radius:5px 5px 0 0}
+.goalw .greal{width:100%;background:linear-gradient(180deg,var(--gold-br),var(--gold-dp));border-radius:5px 5px 0 0;position:relative;z-index:2;transition:height .8s ease}
+.goalw .gv{font-size:10px;color:var(--txt);font-weight:600;margin-top:6px}
+.goalw .gl2{font-size:9px;color:var(--mut);margin-top:1px}
 </style>
 </head>
 <body>
@@ -270,6 +295,7 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
     </div>
     <div id="finWrap" class="locked">
       <div class="blurrable">
+        <div class="goalw" id="goalWidget"></div>
         <div class="kpis" id="finKpis" style="grid-template-columns:repeat(4,1fr)"></div>
         <div class="ins-grid">
           <div class="panel"><h2>Top-Earning Vehicles</h2><div class="muted" style="margin-bottom:12px">Allocated revenue</div><div id="finRevCar"></div></div>
@@ -512,6 +538,38 @@ function note(tx){return `<div class="rev-item note"><div class="ic">›</div><d
 
 /* ---------- FINANCIALS (blurred tab) ---------- */
 function netOf(r){ if(r.total==null) return 0; if(r.net!=null) return r.net; return r.total*0.9 - 10*r.days; }
+function renderGoal(){
+  var g=DATA.goal; if(!g) return;
+  var el=document.getElementById('goalWidget'); if(!el) return;
+  var fmtK=function(n){return '$'+Math.round((n||0)/1000)+'K';};
+  var months=g.months||[];
+  var bars=months.map(function(m){
+    var share=Math.max(0,Math.min(100,(m.total/g.target)*100));
+    var a=m.key.split('-'); var lbl=MON[(+a[1])-1]+" '"+a[0].slice(-2);
+    return '<div class="gcol"><div class="gstack"><div class="gghost"></div>'+
+      '<div class="greal" style="height:'+share+'%"></div></div>'+
+      '<div class="gv">'+fmtK(m.total)+'</div><div class="gl2">'+lbl+'</div></div>';
+  }).join('');
+  var gr=g.growthPct;
+  var grClass=(gr==null)?'':(gr>=0?'pos':'neg');
+  var grTxt=(gr==null)?'\u2014':((gr>0?'+':'')+gr+'%');
+  el.innerHTML=
+    '<div class="gcard">'+
+      '<div class="ghead"><h2>Monthly Revenue Goal</h2><div class="gmo">'+g.currentLabel+'</div></div>'+
+      '<div><span class="gbig">'+fmtUSD(g.currentTotal)+'</span><span class="gof">of '+fmtUSD(g.target)+'</span></div>'+
+      '<div class="gbar"><div class="gfill" style="width:'+g.pct+'%"></div><span class="gpct">'+g.pct+'% of goal</span></div>'+
+      '<div class="gk">'+
+        '<div class="kpi"><div class="lbl">Achieved</div><div class="val">'+fmtUSD(g.currentTotal)+'</div></div>'+
+        '<div class="kpi"><div class="lbl">To Goal</div><div class="val">'+fmtUSD(g.remaining)+'</div></div>'+
+        '<div class="kpi"><div class="lbl">Target</div><div class="val">'+fmtUSD(g.target)+'</div></div>'+
+        '<div class="kpi"><div class="lbl">vs Last Month</div><div class="val '+grClass+'">'+grTxt+'</div></div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="gcard">'+
+      '<div class="ghead"><h2>Monthly Growth</h2><div class="gmo">bar = share of goal \u00b7 gap above = shortfall</div></div>'+
+      '<div class="gtrend"><div class="gline"><span>'+fmtK(g.target)+' goal</span></div>'+bars+'</div>'+
+    '</div>';
+}
 function renderFinancials(){
   const alloc=DATA.rentals.reduce((s,r)=>s+(r.total||0),0);
   const unmatchedRev=DATA.unmatched.reduce((s,u)=>s+(u.total||0),0);
@@ -720,7 +778,7 @@ if(MODE==='operational'){
 }
 renderKPIs();setRange(new Date(+TODAY-7*DAYMS),new Date(+TODAY+7*DAYMS));
 renderFleet();renderCust();renderInsights();renderReview();
-if(MODE==='growth'){renderFinancials();renderBrokers();renderProspecting();}
+if(MODE==='growth'){renderGoal();renderFinancials();renderBrokers();renderProspecting();}
 setTimeout(function(){fitDays(15);},60);
 maybeGate();
 </script>
