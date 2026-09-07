@@ -350,6 +350,9 @@ function parseLocalDay(v){var p=String(v).slice(0,10).split("-");return new Date
 DATA.rentals.forEach(r=>{r.s=parseLocalDay(r.start);r.e=parseLocalDay(r.end);r.days=Math.max(1,Math.round((r.e-r.s)/86400000));r.car=carByPlate[r.plate]||null;});
 DATA.rentals.sort((a,b)=>a.s-b.s);
 DATA.rentals.forEach((r,i)=>{r._ri=i;});
+const NAT={USA:'United States',BR:'Brazil',UAE:'United Arab Emirates',ESP:'Spain',ITA:'Italy',COL:'Colombia',NED:'Netherlands',RUS:'Russia',AUS:'Australia',CAN:'Canada',FRA:'France',GER:'Germany',GRE:'Greece',PAR:'Paraguay',TUR:'Turkey'};
+function natName(v){return NAT[String(v||'').trim().toUpperCase()]||(v||'');}
+function natOf(r){return r.nationality||natName(r.country);}
 const DAYMS=86400000;
 const dkey=d=>{let x=new Date(d);x.setHours(0,0,0,0);return x;};
 function fmtDate(d){return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();}
@@ -434,7 +437,7 @@ function openModal(ri){
       ${(MODE==='growth'&&r.total!=null)?`<div class="mrow"><span class="k">Rental total</span><span class="v">${fmtUSD(r.total)}</span></div>`:''}
       ${(MODE==='growth'&&r.deposit!=null)?`<div class="mrow"><span class="k">Deposit held</span><span class="v">${fmtUSD(r.deposit)}</span></div>`:''}
       ${r.ref?`<div class="mrow"><span class="k">Referral source</span><span class="v">${r.ref}</span></div>`:''}
-      ${r.country?`<div class="mrow"><span class="k">Customer country</span><span class="v">${r.country}</span></div>`:''}
+      ${natOf(r)?`<div class="mrow"><span class="k">Customer country</span><span class="v">${natOf(r)}</span></div>`:''}
     </div>
     <div class="loc"><div class="lh">Delivery &amp; Pick-up</div>
       <div class="lp"><div class="pin">▸</div><div><div class="lk">Delivery location</div>${del}</div></div>
@@ -499,19 +502,19 @@ function renderFleet(){
 
 let custSort={k:(MODE==='growth'?'rev':'n'),dir:-1};
 function custData(){const m={};DATA.rentals.forEach(r=>{const k=r.cust;
-  if(!m[k])m[k]={name:k,n:0,days:0,rev:0,cars:{},country:r.country,phone:'',email:''};
-  m[k].n++;m[k].days+=r.days;m[k].rev+=(r.total||0);if(r.car)m[k].cars[r.plate]=r.car;if(r.country)m[k].country=r.country;if(r.phone)m[k].phone=r.phone;if(r.email)m[k].email=r.email;});
+  if(!m[k])m[k]={name:k,n:0,days:0,rev:0,cars:{},country:natOf(r),phone:'',email:''};
+  m[k].n++;m[k].days+=r.days;m[k].rev+=(r.total||0);if(r.car)m[k].cars[r.plate]=r.car;var _n=natOf(r);if(_n)m[k].country=_n;if(r.phone)m[k].phone=r.phone;if(r.email)m[k].email=r.email;});
   return Object.values(m);}
 /* ---- Customer contact edits (saved on this device) ---- */
 function loadCustEdits(){try{return JSON.parse(localStorage.getItem('imp_custedits')||'{}');}catch(e){return {};}}
 function saveCustEditsObj(o){try{localStorage.setItem('imp_custedits',JSON.stringify(o));}catch(e){}}
-function applyCustEdits(){var ed=loadCustEdits();DATA.rentals.forEach(function(r){var e=ed[r.cust];if(!e)return;if(e.phone)r.phone=e.phone;if(e.email)r.email=e.email;if(e.country)r.country=e.country;});}
+function applyCustEdits(){var ed=loadCustEdits();DATA.rentals.forEach(function(r){var e=ed[r.cust];if(!e)return;if(e.phone)r.phone=e.phone;if(e.email)r.email=e.email;if(e.country){r.country=e.country;r.nationality=e.country;}});}
 function _esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function openCustEdit(name){
   var ed=loadCustEdits(),cur=ed[name]||{};
   var rs=DATA.rentals.filter(function(r){return r.cust===name;});
   var val=function(f,c){return c||(rs.map(function(r){return r[f];}).filter(Boolean).pop()||'');};
-  var ph=val('phone',cur.phone),em=val('email',cur.email),co=val('country',cur.country);
+  var ph=val('phone',cur.phone),em=val('email',cur.email),co=natName(val('country',cur.country));
   var row=function(lbl,id,v){return '<div class="mrow"><span class="k">'+lbl+'</span><input id="'+id+'" value="'+_esc(v)+'" style="flex:1;max-width:62%;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;padding:7px 9px;color:var(--txt);font-size:13px;font-family:var(--mono)"></div>';};
   document.getElementById('modal').innerHTML='<div class="mh"><div class="stripe" style="background:var(--gold)"></div><div class="c1">Edit contact</div><div class="c2">'+_esc(name)+'</div></div>'+'<div class="mb"><div style="font-size:11px;color:var(--mut);margin:2px 0 12px;line-height:1.5">Saved on this device (survives refresh). Use <b style="color:var(--gold-br)">Export corrections</b> to make it permanent everywhere.</div>'+row('Phone','ce_phone',ph)+row('Email','ce_email',em)+row('Country','ce_country',co)+'</div>'+'<div class="mf"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn solid" id="ceSave">Save</button></div>';
   document.getElementById('ov').classList.add('show');
@@ -540,7 +543,7 @@ function renderInsights(){
   document.getElementById('insDow').innerHTML=[1,2,3,4,5,6,0].map(i=>`<div class="c"><div class="cv">${dow[i]}</div><div class="bb" style="height:${dow[i]/maxD*100}%"></div><div class="cl">${DOW[i]}</div></div>`).join('');
   const ref={};DATA.rentals.forEach(r=>{if(r.ref)ref[r.ref]=(ref[r.ref]||0)+1;});DATA.unmatched.forEach(u=>{if(u.referral)ref[u.referral]=(ref[u.referral]||0)+1;});
   hbars(document.getElementById('insRef'),Object.entries(ref).map(([k,v])=>({nm:k,v})).sort((a,b)=>b.v-a.v),v=>v+' rentals');
-  const ctry={};DATA.rentals.forEach(r=>{if(r.country)ctry[r.country]=(ctry[r.country]||0)+1;});DATA.unmatched.forEach(u=>{if(u.country)ctry[u.country]=(ctry[u.country]||0)+1;});
+  const ctry={};DATA.rentals.forEach(r=>{var n=natOf(r);if(n)ctry[n]=(ctry[n]||0)+1;});DATA.unmatched.forEach(u=>{var n=natName(u.country);if(n)ctry[n]=(ctry[n]||0)+1;});
   hbars(document.getElementById('insCountry'),Object.entries(ctry).map(([k,v])=>({nm:k,v})).sort((a,b)=>b.v-a.v),v=>v+' customers');}
 
 function renderReview(){
