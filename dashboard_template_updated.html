@@ -349,6 +349,7 @@ const carByPlate={}; DATA.fleet.forEach(c=>carByPlate[c.plate]=c);
 function parseLocalDay(v){var p=String(v).slice(0,10).split("-");return new Date(+p[0],+p[1]-1,+p[2],12,0,0,0);}
 DATA.rentals.forEach(r=>{r.s=parseLocalDay(r.start);r.e=parseLocalDay(r.end);r.days=Math.max(1,Math.round((r.e-r.s)/86400000));r.car=carByPlate[r.plate]||null;});
 DATA.rentals.sort((a,b)=>a.s-b.s);
+DATA.rentals.forEach((r,i)=>{r._ri=i;});
 const DAYMS=86400000;
 const dkey=d=>{let x=new Date(d);x.setHours(0,0,0,0);return x;};
 function fmtDate(d){return d.getDate()+' '+MON[d.getMonth()]+' '+d.getFullYear();}
@@ -403,14 +404,14 @@ function renderCal(){
       let s=dkey(r.s)<from?from:dkey(r.s),eC=dkey(r.e)>to?to:dkey(r.e);
       let left=Math.round((s-from)/DAYMS)*DAYW+3,w=Math.max((Math.round((eC-s)/DAYMS)+1)*DAYW-6,DAYW-6);
       let dim=['#26272d','#33343a','#2a52be','#1c1d22'].includes(c.hex),last=r.cust.split(' ').slice(-1)[0];
-      html+=`<div class="bar ${dim?'dim':''}" style="left:${left}px;width:${w}px;top:6px;background:${c.hex}" data-ag="${r.ag}">${w>46?last:''}</div>`;});
+      html+=`<div class="bar ${dim?'dim':''}" style="left:${left}px;width:${w}px;top:6px;background:${c.hex}" data-ri="${r._ri}">${w>46?last:''}</div>`;});
     html+='</div></div>';}
   grid.style.width=(LBLW+nDays*DAYW)+'px';grid.innerHTML=html;
-  grid.querySelectorAll('.bar').forEach(b=>{const ag=+b.dataset.ag;
-    b.addEventListener('mousemove',e=>showTip(e,ag));b.addEventListener('mouseleave',hideTip);
-    b.addEventListener('click',()=>{hideTip();openModal(ag);});});
+  grid.querySelectorAll('.bar').forEach(b=>{const ri=+b.dataset.ri;
+    b.addEventListener('mousemove',e=>showTip(e,ri));b.addEventListener('mouseleave',hideTip);
+    b.addEventListener('click',e=>{e.stopPropagation();hideTip();openModal(ri);});});
 }
-function showTip(e,ag){const r=DATA.rentals.find(x=>x.ag===ag),t=document.getElementById('tip'),c=r.car;
+function showTip(e,ri){const r=DATA.rentals[ri];if(!r)return;const t=document.getElementById('tip'),c=r.car;
   t.innerHTML=`<div class="t1">${r.cust}</div><div class="t2">${c?c.make+' '+c.model:''} · <span style="font-family:var(--mono)">${r.plate}</span> · #${r.ag}</div>
     <div class="row"><span>Period</span><b>${fmtDate(r.s)} → ${fmtDate(r.e)}</b></div>
     <div class="row"><span>Days</span><b>${r.days}</b></div>
@@ -419,8 +420,8 @@ function showTip(e,ag){const r=DATA.rentals.find(x=>x.ag===ag),t=document.getEle
   if(x+290>innerWidth)x=e.clientX-290;if(y+150>innerHeight)y=e.clientY-150;t.style.left=x+'px';t.style.top=y+'px';}
 function hideTip(){document.getElementById('tip').style.display='none';}
 
-function openModal(ag){
-  const r=DATA.rentals.find(x=>x.ag===ag),c=r.car;
+function openModal(ri){
+  const r=DATA.rentals[ri];if(!r)return;const c=r.car;
   const del=r.delivery?`<div class="lv">${r.delivery}</div>`:`<div class="lv empty">Not specified yet</div>`;
   const pick=r.pickup?`<div class="lv">${r.pickup}</div>`:`<div class="lv empty">Not specified yet</div>`;
   document.getElementById('modal').innerHTML=`
