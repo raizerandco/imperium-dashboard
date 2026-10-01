@@ -806,7 +806,7 @@ if(MODE==='growth'){renderGoal();renderFinancials();renderBrokers();renderProspe
 setTimeout(function(){fitDays(15);},60);
 maybeGate();
 </script>
-</script><!-- ===== IMPERIUM · Novo Aluguel (form nativo -> webhook n8n) ===== -->
+</script><!-- ===== IMPERIUM · New Rental (native form -> n8n webhook) ===== -->
 <style>
 #newRentalFab{position:fixed;right:26px;bottom:24px;z-index:60;display:flex;align-items:center;gap:8px;
   font-family:var(--sans);font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(180deg,var(--gold-br),var(--gold));
@@ -835,45 +835,42 @@ maybeGate();
 #formOv .ff .msg.ok{color:var(--ok)} #formOv .ff .msg.bad{color:var(--bad)}
 </style>
 
-<button id="newRentalFab" onclick="openRentalForm()"><span class="pl">+</span> Novo Aluguel</button>
+<button id="newRentalFab" onclick="openRentalForm()"><span class="pl">+</span> New Rental</button>
 <div id="formOv" onclick="if(event.target===this)closeRentalForm()">
   <div class="fm">
-    <div class="fh"><div class="ft">Novo Aluguel</div><button class="fx" onclick="closeRentalForm()">&times;</button></div>
+    <div class="fh"><div class="ft">New Rental</div><button class="fx" onclick="closeRentalForm()">&times;</button></div>
     <div class="fb"><form id="rentalForm" autocomplete="off"></form></div>
     <div class="ff"><span class="msg" id="formMsg"></span>
-      <button class="btn" type="button" onclick="closeRentalForm()">Cancelar</button>
-      <button class="btn solid" type="button" id="formSubmit" onclick="submitRental()">Enviar aluguel</button></div>
+      <button class="btn" type="button" onclick="closeRentalForm()">Cancel</button>
+      <button class="btn solid" type="button" id="formSubmit" onclick="submitRental()">Submit rental</button></div>
   </div>
 </div>
 <script>
 (function(){
-  /* ====== EDITE AQUI: cole a URL de PRODUCAO do seu Webhook do n8n ====== */
   var WEBHOOK_URL='https://raizerandco.app.n8n.cloud/webhook/new-rental';
-  /* ===================================================================== */
   var CARS=["Mercedes-Benz G63 AMG - Arabian Grey (LYV0237)","Mercedes-Benz G63 AMG - Matte Black (46AF603)","Mercedes-Benz SL55 AMG - White (46AF605)","Mercedes-Benz Maybach 580 - White two-tone (46AG312)","Porsche GT3 - Yellow (MPG3311)","Porsche 911 Carrera S - Dark Blue (46AF604)","Rolls-Royce Spectre - Black (46AE086)","Rolls-Royce Cullinan - Space Grey (MCR7829)","Rolls-Royce Cullinan Black Badge - Black (46AE260)","Lamborghini Urus EV - Baby Blue (DYD1540)","Lamborghini Urus - Lime Green (MCK3449)","Lamborghini Urus - Pearl Blue (46AE259)","Lamborghini Urus Performante - Yellow (46AE087)","Cadillac Escalade - Black (46AF257)","Ferrari 296 GTS - Assetto Fiorano (DYA4488)","Ferrari SF90 Stradale - Rosso Corsa (PR3GB)","Land Rover Defender - White (NHB2130)","Land Rover Defender Trophy - Yellow (LRB7558)","Lamborghini Huracan - Lime Green (LJZ6570)","Aston Martin DBX 707 - Pearl Blue (343226V)","McLaren 720S - Orange (46AJ191)"];
   var SRC=["CALL - GOOGLE ADS","FORM - GOOGLE ADS","B2B PARTNERS USA","TATI","F&F"];
   var PAY=["Credit Card","Debit Card","Cash"]; var OPENED=["Rodrigo Raizer"];
-  // [label, type, required, width(1-6), options]
   var F=[
-   ["sec","Cliente"],
+   ["sec","Client"],
    ["Client name","text",1,3],["Client email","email",1,3],["Client Phone","tel",1,2],["Nationality","text",1,2],
    ["Date of Birth","date",1,2],["Source","select",1,3,SRC],["Opened By","select",1,3,OPENED],
-   ["sec","Endereco"],
+   ["sec","Address"],
    ["Home address","text",1,6],["City","text",1,2],["State","text",1,2],["Zip","text",1,2],
    ["Delivery Address","text",1,3],["Pickup Address","text",1,3],
-   ["sec","Aluguel"],
+   ["sec","Rental"],
    ["Car","select",1,6,CARS],["Start Date","date",1,3],["End Date","date",1,3],
    ["Discount","text",1,2],["Odometer Out","text",1,2],["Agreement Number","text",1,2],
-   ["sec","CNH (Licenca)"],
+   ["sec","Driver License"],
    ["License Number","text",1,2],["License State","text",1,2],["License Expires","date",1,2],
-   ["sec","Pagamento"],
+   ["sec","Payment"],
    ["Payment Type","select",1,2,PAY],["Link of payment","text",0,4],["Payment Description","text",0,6],
-   ["sec","Seguro"],
+   ["sec","Insurance"],
    ["insurer","text",1,2],["Policy Number","text",1,2],["Policy Expiration","date",1,2],
-   ["sec","Motorista Adicional (opcional)"],
+   ["sec","Additional Driver (optional)"],
    ["Additional Driver Name","text",0,3],["Additional Driver DOB","date",0,3],
    ["Additional Driver License","text",0,2],["Additional Driver License State","text",0,2],["Additional Driver License Expires","date",0,2],
-   ["sec","Notas"],
+   ["sec","Notes"],
    ["Notes","textarea",0,6]
   ];
   var form=document.getElementById('rentalForm'), fields=[];
@@ -884,7 +881,7 @@ maybeGate();
     var id='fld_'+fields.length; fields.push({id:id,label:label});
     var lab='<label for="'+id+'">'+label+(req?' <span class="req">*</span>':'')+'</label>';
     var ctl;
-    if(type==='select'){ctl='<select id="'+id+'" data-req="'+req+'"><option value="">Selecione...</option>'+opts.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">'+o+'</option>';}).join('')+'</select>';}
+    if(type==='select'){ctl='<select id="'+id+'" data-req="'+req+'"><option value="">Select...</option>'+opts.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">'+o+'</option>';}).join('')+'</select>';}
     else if(type==='textarea'){ctl='<textarea id="'+id+'" rows="2" data-req="'+req+'"></textarea>';}
     else{ctl='<input id="'+id+'" type="'+type+'" data-req="'+req+'">';}
     wrap.innerHTML=lab+ctl; form.appendChild(wrap);
@@ -896,17 +893,17 @@ maybeGate();
     var payload={},missing=[];
     fields.forEach(function(f){var el=document.getElementById(f.id);var v=(el.value||'').trim();payload[f.label]=v;
       if(el.getAttribute('data-req')==='1'&&!v)missing.push(f.label);});
-    if(missing.length){setMsg('Preencha: '+missing.slice(0,3).join(', ')+(missing.length>3?'...':''),'bad');return;}
-    if(WEBHOOK_URL.indexOf('http')!==0){setMsg('Falta configurar a URL do webhook no codigo.','bad');return;}
-    var btn=document.getElementById('formSubmit');btn.disabled=true;setMsg('Enviando...','');
+    if(missing.length){setMsg('Please fill: '+missing.slice(0,3).join(', ')+(missing.length>3?'...':''),'bad');return;}
+    var btn=document.getElementById('formSubmit');btn.disabled=true;setMsg('Sending...','');
     fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
       .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
-      .then(function(){setMsg('Aluguel enviado! Aparece no painel na proxima atualizacao.','ok');form.reset();
+      .then(function(){setMsg('Rental submitted! It will appear on the dashboard on the next refresh.','ok');form.reset();
         setTimeout(function(){closeRentalForm();btn.disabled=false;},1800);})
-      .catch(function(e){setMsg('Erro ao enviar: '+e.message+' (confira webhook/CORS)','bad');btn.disabled=false;});
+      .catch(function(e){setMsg('Submit failed: '+e.message+' (check webhook / CORS)','bad');btn.disabled=false;});
   };
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){var o=document.getElementById('formOv');if(o&&o.classList.contains('show'))closeRentalForm();}});
 })();
+</script>
 </script>
 </body>
 </html>
