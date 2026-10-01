@@ -805,57 +805,107 @@ renderFleet();renderCust();renderInsights();renderReview();
 if(MODE==='growth'){renderGoal();renderFinancials();renderBrokers();renderProspecting();}
 setTimeout(function(){fitDays(15);},60);
 maybeGate();
-</script><!-- ===== IMPERIUM · Botao "Novo Aluguel" (form n8n embutido) ===== -->
+</script>
+</script><!-- ===== IMPERIUM · Novo Aluguel (form nativo -> webhook n8n) ===== -->
 <style>
 #newRentalFab{position:fixed;right:26px;bottom:24px;z-index:60;display:flex;align-items:center;gap:8px;
-  font-family:var(--sans);font-weight:700;font-size:14px;letter-spacing:.3px;cursor:pointer;
-  background:linear-gradient(180deg,var(--gold-br),var(--gold));color:#1a1407;border:1px solid var(--gold);
-  padding:13px 20px;border-radius:40px;box-shadow:0 10px 30px rgba(212,175,55,.35)}
-#newRentalFab:hover{filter:brightness(1.08)}
-#newRentalFab .pl{font-size:20px;line-height:1}
-#formOv{position:fixed;inset:0;background:rgba(4,4,6,.82);backdrop-filter:blur(3px);z-index:90;
-  display:none;align-items:center;justify-content:center;padding:20px}
+  font-family:var(--sans);font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(180deg,var(--gold-br),var(--gold));
+  color:#1a1407;border:1px solid var(--gold);padding:13px 20px;border-radius:40px;box-shadow:0 10px 30px rgba(212,175,55,.35)}
+#newRentalFab:hover{filter:brightness(1.08)} #newRentalFab .pl{font-size:20px;line-height:1}
+#formOv{position:fixed;inset:0;background:rgba(4,4,6,.82);backdrop-filter:blur(3px);z-index:90;display:none;align-items:center;justify-content:center;padding:20px}
 #formOv.show{display:flex}
-#formOv .formmodal{width:920px;max-width:100%;height:90vh;background:linear-gradient(180deg,var(--panel2),var(--bg2));
-  border:1px solid var(--gold-dp);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;
-  box-shadow:0 30px 90px rgba(0,0,0,.7)}
-#formOv .formhead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px;
-  border-bottom:1px solid var(--line);background:#14141a}
-#formOv .formhead .ft{font-family:var(--serif);font-size:22px;color:var(--gold-br)}
-#formOv .formhead .fr{display:flex;align-items:center;gap:12px}
-#formOv .flink{font-size:12px;color:var(--gold-br);text-decoration:none;border:1px solid var(--gold-dp);
-  padding:6px 11px;border-radius:7px}
-#formOv .flink:hover{background:var(--gold-soft)}
-#formOv .fx{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:#16161b;
-  color:var(--txt);font-size:17px;cursor:pointer}
+#formOv .fm{width:960px;max-width:100%;height:92vh;background:linear-gradient(180deg,var(--panel2),var(--bg2));border:1px solid var(--gold-dp);
+  border-radius:16px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+#formOv .fh{display:flex;align-items:center;justify-content:space-between;padding:15px 20px;border-bottom:1px solid var(--line);background:#14141a}
+#formOv .fh .ft{font-family:var(--serif);font-size:23px;color:var(--gold-br)}
+#formOv .fx{width:34px;height:34px;border-radius:50%;border:1px solid var(--line2);background:#16161b;color:var(--txt);font-size:18px;cursor:pointer}
 #formOv .fx:hover{border-color:var(--gold);color:var(--gold-br)}
-#formFrame{flex:1 1 auto;width:100%;border:0;background:#fff}
-#formOv .formfoot{font-size:11px;color:var(--mut);text-align:center;padding:9px 14px;border-top:1px solid var(--line);background:#101015}
+#formOv .fb{flex:1 1 auto;overflow-y:auto;padding:18px 22px}
+#rentalForm{display:grid;grid-template-columns:repeat(6,1fr);gap:13px 14px}
+#rentalForm .sec{grid-column:1/-1;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold-br);
+  border-bottom:1px solid var(--line);padding-bottom:5px;margin-top:10px}
+#rentalForm .fld{display:flex;flex-direction:column;gap:5px}
+#rentalForm label{font-size:10.5px;letter-spacing:.4px;color:var(--mut)}
+#rentalForm label .req{color:var(--bad)}
+#rentalForm input,#rentalForm select,#rentalForm textarea{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;
+  padding:9px 11px;color:var(--txt);font-family:var(--sans);font-size:13px}
+#rentalForm input:focus,#rentalForm select:focus,#rentalForm textarea:focus{outline:none;border-color:var(--gold-dp)}
+#formOv .ff{display:flex;justify-content:flex-end;gap:10px;align-items:center;padding:14px 22px;border-top:1px solid var(--line);background:#101015}
+#formOv .ff .msg{margin-right:auto;font-size:12.5px}
+#formOv .ff .msg.ok{color:var(--ok)} #formOv .ff .msg.bad{color:var(--bad)}
 </style>
 
 <button id="newRentalFab" onclick="openRentalForm()"><span class="pl">+</span> Novo Aluguel</button>
 <div id="formOv" onclick="if(event.target===this)closeRentalForm()">
-  <div class="formmodal">
-    <div class="formhead">
-      <div class="ft">Novo Aluguel</div>
-      <div class="fr">
-        <a class="flink" id="formNewTab" href="#" target="_blank" rel="noopener">Abrir em nova aba &#8599;</a>
-        <button class="fx" onclick="closeRentalForm()" title="Fechar">&times;</button>
-      </div>
-    </div>
-    <iframe id="formFrame" title="Novo Aluguel" src="about:blank"></iframe>
-    <div class="formfoot">Preencha e envie. O aluguel entra no painel na próxima atualização automática.</div>
+  <div class="fm">
+    <div class="fh"><div class="ft">Novo Aluguel</div><button class="fx" onclick="closeRentalForm()">&times;</button></div>
+    <div class="fb"><form id="rentalForm" autocomplete="off"></form></div>
+    <div class="ff"><span class="msg" id="formMsg"></span>
+      <button class="btn" type="button" onclick="closeRentalForm()">Cancelar</button>
+      <button class="btn solid" type="button" id="formSubmit" onclick="submitRental()">Enviar aluguel</button></div>
   </div>
 </div>
 <script>
 (function(){
-  var URL_FORM='https://raizerandco.app.n8n.cloud/form/dbaf126b-99e2-465b-b37e-cb79576c3f61';
-  var l=document.getElementById('formNewTab'); if(l) l.href=URL_FORM;
-  window.openRentalForm=function(){var f=document.getElementById('formFrame');
-    if(f.getAttribute('src')!==URL_FORM) f.setAttribute('src',URL_FORM);
-    document.getElementById('formOv').classList.add('show'); document.body.style.overflow='hidden';};
-  window.closeRentalForm=function(){document.getElementById('formOv').classList.remove('show'); document.body.style.overflow='';};
-  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){var o=document.getElementById('formOv'); if(o&&o.classList.contains('show')) closeRentalForm();}});
+  /* ====== EDITE AQUI: cole a URL de PRODUCAO do seu Webhook do n8n ====== */
+  var WEBHOOK_URL='https://raizerandco.app.n8n.cloud/webhook/new-rental';
+  /* ===================================================================== */
+  var CARS=["Mercedes-Benz G63 AMG - Arabian Grey (LYV0237)","Mercedes-Benz G63 AMG - Matte Black (46AF603)","Mercedes-Benz SL55 AMG - White (46AF605)","Mercedes-Benz Maybach 580 - White two-tone (46AG312)","Porsche GT3 - Yellow (MPG3311)","Porsche 911 Carrera S - Dark Blue (46AF604)","Rolls-Royce Spectre - Black (46AE086)","Rolls-Royce Cullinan - Space Grey (MCR7829)","Rolls-Royce Cullinan Black Badge - Black (46AE260)","Lamborghini Urus EV - Baby Blue (DYD1540)","Lamborghini Urus - Lime Green (MCK3449)","Lamborghini Urus - Pearl Blue (46AE259)","Lamborghini Urus Performante - Yellow (46AE087)","Cadillac Escalade - Black (46AF257)","Ferrari 296 GTS - Assetto Fiorano (DYA4488)","Ferrari SF90 Stradale - Rosso Corsa (PR3GB)","Land Rover Defender - White (NHB2130)","Land Rover Defender Trophy - Yellow (LRB7558)","Lamborghini Huracan - Lime Green (LJZ6570)","Aston Martin DBX 707 - Pearl Blue (343226V)","McLaren 720S - Orange (46AJ191)"];
+  var SRC=["CALL - GOOGLE ADS","FORM - GOOGLE ADS","B2B PARTNERS USA","TATI","F&F"];
+  var PAY=["Credit Card","Debit Card","Cash"]; var OPENED=["Rodrigo Raizer"];
+  // [label, type, required, width(1-6), options]
+  var F=[
+   ["sec","Cliente"],
+   ["Client name","text",1,3],["Client email","email",1,3],["Client Phone","tel",1,2],["Nationality","text",1,2],
+   ["Date of Birth","date",1,2],["Source","select",1,3,SRC],["Opened By","select",1,3,OPENED],
+   ["sec","Endereco"],
+   ["Home address","text",1,6],["City","text",1,2],["State","text",1,2],["Zip","text",1,2],
+   ["Delivery Address","text",1,3],["Pickup Address","text",1,3],
+   ["sec","Aluguel"],
+   ["Car","select",1,6,CARS],["Start Date","date",1,3],["End Date","date",1,3],
+   ["Discount","text",1,2],["Odometer Out","text",1,2],["Agreement Number","text",1,2],
+   ["sec","CNH (Licenca)"],
+   ["License Number","text",1,2],["License State","text",1,2],["License Expires","date",1,2],
+   ["sec","Pagamento"],
+   ["Payment Type","select",1,2,PAY],["Link of payment","text",0,4],["Payment Description","text",0,6],
+   ["sec","Seguro"],
+   ["insurer","text",1,2],["Policy Number","text",1,2],["Policy Expiration","date",1,2],
+   ["sec","Motorista Adicional (opcional)"],
+   ["Additional Driver Name","text",0,3],["Additional Driver DOB","date",0,3],
+   ["Additional Driver License","text",0,2],["Additional Driver License State","text",0,2],["Additional Driver License Expires","date",0,2],
+   ["sec","Notas"],
+   ["Notes","textarea",0,6]
+  ];
+  var form=document.getElementById('rentalForm'), fields=[];
+  F.forEach(function(f){
+    if(f[0]==="sec"){var s=document.createElement('div');s.className='sec';s.textContent=f[1];form.appendChild(s);return;}
+    var label=f[0],type=f[1],req=f[2],w=f[3],opts=f[4];
+    var wrap=document.createElement('div');wrap.className='fld';wrap.style.gridColumn='span '+w;
+    var id='fld_'+fields.length; fields.push({id:id,label:label});
+    var lab='<label for="'+id+'">'+label+(req?' <span class="req">*</span>':'')+'</label>';
+    var ctl;
+    if(type==='select'){ctl='<select id="'+id+'" data-req="'+req+'"><option value="">Selecione...</option>'+opts.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">'+o+'</option>';}).join('')+'</select>';}
+    else if(type==='textarea'){ctl='<textarea id="'+id+'" rows="2" data-req="'+req+'"></textarea>';}
+    else{ctl='<input id="'+id+'" type="'+type+'" data-req="'+req+'">';}
+    wrap.innerHTML=lab+ctl; form.appendChild(wrap);
+  });
+  window.openRentalForm=function(){document.getElementById('formOv').classList.add('show');document.body.style.overflow='hidden';setMsg('','');};
+  window.closeRentalForm=function(){document.getElementById('formOv').classList.remove('show');document.body.style.overflow='';};
+  function setMsg(t,cls){var m=document.getElementById('formMsg');m.textContent=t;m.className='msg '+(cls||'');}
+  window.submitRental=function(){
+    var payload={},missing=[];
+    fields.forEach(function(f){var el=document.getElementById(f.id);var v=(el.value||'').trim();payload[f.label]=v;
+      if(el.getAttribute('data-req')==='1'&&!v)missing.push(f.label);});
+    if(missing.length){setMsg('Preencha: '+missing.slice(0,3).join(', ')+(missing.length>3?'...':''),'bad');return;}
+    if(WEBHOOK_URL.indexOf('http')!==0){setMsg('Falta configurar a URL do webhook no codigo.','bad');return;}
+    var btn=document.getElementById('formSubmit');btn.disabled=true;setMsg('Enviando...','');
+    fetch(WEBHOOK_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+      .then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.text();})
+      .then(function(){setMsg('Aluguel enviado! Aparece no painel na proxima atualizacao.','ok');form.reset();
+        setTimeout(function(){closeRentalForm();btn.disabled=false;},1800);})
+      .catch(function(e){setMsg('Erro ao enviar: '+e.message+' (confira webhook/CORS)','bad');btn.disabled=false;});
+  };
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'){var o=document.getElementById('formOv');if(o&&o.classList.contains('show'))closeRentalForm();}});
 })();
 </script>
 </body>
