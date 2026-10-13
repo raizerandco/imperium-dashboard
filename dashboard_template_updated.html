@@ -806,7 +806,7 @@ if(MODE==='growth'){renderGoal();renderFinancials();renderBrokers();renderProspe
 setTimeout(function(){fitDays(15);},60);
 maybeGate();
 </script>
-</script><!-- ===== IMPERIUM · New Rental (native form -> n8n webhook) ===== -->
+</script><!-- ===== IMPERIUM - New Rental (native form -> n8n webhook) ===== -->
 <style>
 #newRentalFab{position:fixed;right:26px;bottom:24px;z-index:60;display:flex;align-items:center;gap:8px;
   font-family:var(--sans);font-weight:700;font-size:14px;cursor:pointer;background:linear-gradient(180deg,var(--gold-br),var(--gold));
@@ -867,6 +867,12 @@ maybeGate();
    ["Payment Type","select",1,2,PAY],["Link of payment","text",0,4],["Payment Description","text",0,6],
    ["sec","Insurance"],
    ["insurer","text",1,2],["Policy Number","text",1,2],["Policy Expiration","date",1,2],
+   ["sec","Broker (optional)"],
+   ["Broker Name","text",0,3,0,"broker_name"],["Broker Email","email",0,3,0,"broker_email"],
+   ["Broker Rate (%)","text",0,2,0,"broker_rate"],["Broker Commission","text",0,2,0,"broker_commision"],["Broker EIN","text",0,2,0,"broker_ein"],
+   ["Broker Address","text",0,6,0,"broker_address"],
+   ["sec","Financials (optional)"],
+   ["Net","text",0,3,0,"net"],["Fees","text",0,3,0,"fees"],
    ["sec","Additional Driver (optional)"],
    ["Additional Driver Name","text",0,3],["Additional Driver DOB","date",0,3],
    ["Additional Driver License","text",0,2],["Additional Driver License State","text",0,2],["Additional Driver License Expires","date",0,2],
@@ -878,7 +884,7 @@ maybeGate();
     if(f[0]==="sec"){var s=document.createElement('div');s.className='sec';s.textContent=f[1];form.appendChild(s);return;}
     var label=f[0],type=f[1],req=f[2],w=f[3],opts=f[4];
     var wrap=document.createElement('div');wrap.className='fld';wrap.style.gridColumn='span '+w;
-    var id='fld_'+fields.length; fields.push({id:id,label:label});
+    var id='fld_'+fields.length; fields.push({id:id,label:label,key:(f[5]||label)});
     var lab='<label for="'+id+'">'+label+(req?' <span class="req">*</span>':'')+'</label>';
     var ctl;
     if(type==='select'){ctl='<select id="'+id+'" data-req="'+req+'"><option value="">Select...</option>'+opts.map(function(o){return '<option value="'+o.replace(/"/g,'&quot;')+'">'+o+'</option>';}).join('')+'</select>';}
@@ -891,7 +897,7 @@ maybeGate();
   function setMsg(t,cls){var m=document.getElementById('formMsg');m.textContent=t;m.className='msg '+(cls||'');}
   window.submitRental=function(){
     var payload={},missing=[];
-    fields.forEach(function(f){var el=document.getElementById(f.id);var v=(el.value||'').trim();payload[f.label]=v;
+    fields.forEach(function(f){var el=document.getElementById(f.id);var v=(el.value||'').trim();payload[f.key]=v;
       if(el.getAttribute('data-req')==='1'&&!v)missing.push(f.label);});
     if(missing.length){setMsg('Please fill: '+missing.slice(0,3).join(', ')+(missing.length>3?'...':''),'bad');return;}
     var btn=document.getElementById('formSubmit');btn.disabled=true;setMsg('Sending...','');
@@ -903,6 +909,7 @@ maybeGate();
   };
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){var o=document.getElementById('formOv');if(o&&o.classList.contains('show'))closeRentalForm();}});
 })();
+</script>
 </script>
 </script>
 </body>
