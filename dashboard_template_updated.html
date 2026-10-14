@@ -235,6 +235,7 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
     <button data-v="cal" class="active">Calendar</button>
     <button data-v="fleet">Fleet</button>
     <button data-v="cust">Customers</button>
+    <button data-v="rentals">Rentals</button>
     <button data-v="ins">Metrics</button>
     <button data-v="rev">Data review</button>
     <button data-v="fin" class="fin finonly">Financials</button>
@@ -908,6 +909,90 @@ maybeGate();
       .catch(function(e){setMsg('Submit failed: '+e.message+' (check webhook / CORS)','bad');btn.disabled=false;});
   };
   document.addEventListener('keydown',function(e){if(e.key==='Escape'){var o=document.getElementById('formOv');if(o&&o.classList.contains('show'))closeRentalForm();}});
+})();
+</script><!-- ===== IMPERIUM - Rentals tab (paste right before </body>) ===== -->
+<style>
+#v-rentals .rtbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+#v-rentals .rsearch{display:flex;align-items:center;gap:8px;background:var(--bg2);border:1px solid var(--line2);border-radius:9px;padding:9px 12px;min-width:260px}
+#v-rentals .rsearch input{background:none;border:none;outline:none;color:var(--txt);font-family:var(--sans);font-size:13px;width:100%}
+#v-rentals .rwrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+#v-rentals table.rtbl{width:100%;border-collapse:collapse;min-width:720px}
+#v-rentals .rtbl th{text-align:left;font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-br);padding:11px 14px;border-bottom:1px solid var(--line);background:#14141a;position:sticky;top:0}
+#v-rentals .rtbl td{padding:12px 14px;border-bottom:1px solid #1a1a21;vertical-align:middle;font-size:13.5px}
+#v-rentals .rtbl tr:hover td{background:#16161d}
+#v-rentals .r-ag{font-family:var(--mono);font-weight:700;color:var(--gold-br)}
+#v-rentals .r-cust{font-weight:600}
+#v-rentals .r-car{display:flex;align-items:center;gap:8px}
+#v-rentals .r-dot{width:9px;height:9px;border-radius:50%;flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.06)}
+#v-rentals .r-sub{color:var(--mut);font-size:12px;font-family:var(--mono)}
+#v-rentals .r-per{white-space:nowrap;font-family:var(--mono);font-size:12.5px}
+#v-rentals .r-tot{text-align:right;font-weight:700;font-family:var(--mono)}
+#v-rentals .r-act{display:flex;gap:7px;justify-content:flex-end}
+#v-rentals .r-btn{border:1px solid var(--line2);background:#16161d;color:var(--txt);border-radius:8px;padding:7px 11px;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;white-space:nowrap}
+#v-rentals .r-btn:hover{border-color:var(--gold-dp)}
+#v-rentals .r-btn.gold{background:linear-gradient(180deg,var(--gold-br),var(--gold));color:#1a1407;border-color:var(--gold)}
+#v-rentals .r-btn.off{opacity:.4;cursor:not-allowed}
+@media(max-width:720px){#v-rentals .hidem{display:none}}
+</style>
+
+<section class="view" id="v-rentals">
+  <div class="panel">
+    <div class="ph"><div><h2>Rentals</h2><div class="muted">All rentals from the database - click a row for full details or open the signed contract</div></div></div>
+    <div style="padding:14px 16px">
+      <div class="rtbar">
+        <div class="muted" id="rentalsCount"></div>
+        <div class="rsearch">&#128269;<input id="rentalsSearch" placeholder="Search client, vehicle, agreement, plate..."></div>
+      </div>
+      <div class="rwrap">
+        <table class="rtbl"><thead><tr>
+          <th>Agr.</th><th>Client</th><th>Vehicle</th><th class="hidem">Period</th><th style="text-align:right">Total</th><th style="text-align:right">Actions</th>
+        </tr></thead><tbody id="rentalsBody"></tbody></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  function contractUrl(r){return r.signed_pdf_url||r.contract||r.signed_url||r.signed||'';}
+  function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function rowHtml(r){
+    var c=r.car, url=contractUrl(r);
+    var carName=c?(c.make+' '+c.model):'-';
+    var sub=[r.plate,(c&&c.color)?c.color:''].filter(Boolean).join(' - ');
+    var btnC=url?('<a class="r-btn gold" target="_blank" rel="noopener" href="'+esc(url)+'">Contract</a>')
+                :'<span class="r-btn off">No contract</span>';
+    return '<tr>'+
+      '<td class="r-ag">IMP'+r.ag+'</td>'+
+      '<td><div class="r-cust">'+esc(r.cust)+'</div></td>'+
+      '<td><div class="r-car"><span class="r-dot" style="background:'+(c?c.hex:'#777')+'"></span>'+
+        '<div><div>'+esc(carName)+'</div><div class="r-sub">'+esc(sub)+'</div></div></div></td>'+
+      '<td class="hidem r-per">'+fmtDate(r.s)+' &rarr; '+fmtDate(r.e)+'</td>'+
+      '<td class="r-tot">'+(r.total!=null?fmtUSD2(r.total):'-')+'</td>'+
+      '<td><div class="r-act"><button class="r-btn" onclick="openModal('+r._ri+')">Details</button>'+btnC+'</div></td>'+
+      '</tr>';
+  }
+  function render(list){
+    document.getElementById('rentalsBody').innerHTML=list.map(rowHtml).join('');
+    document.getElementById('rentalsCount').textContent=list.length+' rentals';
+  }
+  window.renderRentals=function(){
+    var all=DATA.rentals.slice().sort(function(a,b){return b.s-a.s;}); // newest first
+    render(all);
+    var inp=document.getElementById('rentalsSearch');
+    if(inp && !inp._wired){ inp._wired=true;
+      inp.addEventListener('input',function(e){
+        var t=(e.target.value||'').toLowerCase().trim();
+        if(!t){render(all);return;}
+        render(all.filter(function(r){
+          var c=r.car;
+          var hay=('IMP'+r.ag+' '+r.cust+' '+(c?c.make+' '+c.model:'')+' '+(r.plate||'')+' '+(c&&c.color?c.color:'')).toLowerCase();
+          return hay.indexOf(t)>=0;
+        }));
+      });
+    }
+  };
+  try{ if(typeof DATA!=="undefined" && DATA && DATA.rentals) renderRentals(); }catch(e){}
 })();
 </script>
 </body>
