@@ -659,8 +659,8 @@ function renderBrokers(){
           <div class="muted" style="margin-top:3px">${[g.email,g.address,g.ein?('EIN '+g.ein):''].filter(Boolean).join(' · ')||''}</div></div>
         <div style="text-align:right"><div class="muted" style="font-size:10px;letter-spacing:1px;text-transform:uppercase">Commission due</div>
           <div style="font-family:var(--mono);font-size:20px;color:var(--gold-br)">${fmtUSD2(tot)}</div></div></div>
-      <div style="overflow-x:auto"><table><thead><tr><th>Client</th><th>Vehicle</th><th>Rental dates</th><th class="num">Rental total</th><th class="num">Commission</th></tr></thead><tbody>
-      ${g.rows.map(r=>`<tr><td>${r.cust}</td><td class="muted">${r.car?r.car.model:r.plate}</td><td class="muted">${fmtDate(r.s)} → ${fmtDate(r.e)}</td><td class="num">${r.total!=null?fmtUSD(r.total):'—'}</td><td class="num" style="color:var(--gold-br)">${fmtUSD2(commissionOf(r))}${(r.broker_rate!=null&&r.broker_commission==null)?` <span class="muted">(${(r.broker_rate*100).toFixed(0)}% net)</span>`:''}</td></tr>`).join('')}
+      <div style="overflow-x:auto"><table><thead><tr><th>Client</th><th>Vehicle</th><th>Rental dates</th><th class="num">Rental total</th><th class="num">Commission</th><th>Docs</th></tr></thead><tbody>
+      ${g.rows.map(r=>`<tr><td>${r.cust}</td><td class="muted">${r.car?r.car.model:r.plate}</td><td class="muted">${fmtDate(r.s)} → ${fmtDate(r.e)}</td><td class="num">${r.total!=null?fmtUSD(r.total):'—'}</td><td class="num" style="color:var(--gold-br)">${fmtUSD2(commissionOf(r))}${(r.broker_rate!=null&&r.broker_commission==null)?` <span class="muted">(${(r.broker_rate*100).toFixed(0)}% net)</span>`:''}</td><td><button class="btn" style="padding:5px 10px;font-size:11px;white-space:nowrap" onclick="genBrokerDocs(${r._ri})">PDF + Excel</button></td></tr>`).join('')}
       </tbody></table></div></div>`; });
   document.getElementById('brkBody').innerHTML=h;
 }
