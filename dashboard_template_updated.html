@@ -6,7 +6,7 @@
 <title>Imperium · Rental Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,500&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Michroma&display=swap" rel="stylesheet">
 <style>
 :root{
   --bg:#08080a; --bg2:#0f0f13; --panel:#14141a; --panel2:#1a1a22;
@@ -28,8 +28,8 @@ a{color:var(--gold)}
 .wrap{max-width:1640px;margin:0 auto;padding:26px 30px 80px}
 header.top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:8px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:16px}
-.crest{width:52px;height:52px;border:1.5px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:26px;color:var(--gold);box-shadow:0 0 24px rgba(212,175,55,.18) inset,0 0 18px rgba(212,175,55,.08)}
-.brand h1{font-family:var(--serif);font-weight:600;font-size:34px;margin:0;letter-spacing:.5px;line-height:1}
+.crest{display:none;width:52px;height:52px;border:1.5px solid var(--gold);border-radius:50%;display:grid;place-items:center;font-family:var(--serif);font-size:26px;color:var(--gold);box-shadow:0 0 24px rgba(212,175,55,.18) inset,0 0 18px rgba(212,175,55,.08)}
+.brand h1{font-family:'Michroma',sans-serif;font-weight:400;font-size:25px;margin:0;letter-spacing:1px;line-height:1.1}
 .brand h1 b{color:var(--gold);font-weight:700}
 .brand .sub{font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--mut);margin-top:5px}
 .topright{text-align:right;font-size:12px;color:var(--mut)}
@@ -992,8 +992,10 @@ maybeGate();
       });
     }
   };
+  try{var _w=document.querySelector('.wrap'),_f=_w&&_w.querySelector('.foot'),_v=document.getElementById('v-rentals');if(_w&&_v){_f?_w.insertBefore(_v,_f):_w.appendChild(_v);}}catch(e){}
   try{ if(typeof DATA!=="undefined" && DATA && DATA.rentals) renderRentals(); }catch(e){}
 })();
+</script>
 </script>
 </body>
 </html>
