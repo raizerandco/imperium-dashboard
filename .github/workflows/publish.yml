@@ -1,0 +1,56 @@
+name: Publish Imperium Dashboards
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # every 20 minutes (UTC). Adjust or remove as you like.
+  workflow_dispatch: {}        # lets you run it manually from the Actions tab.
+
+concurrency:
+  group: publish-dashboards
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout publisher
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build growth + operational HTML
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node build.js
+
+      - name: Publish to target repos
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set -e
+          git config --global user.name "imperium-bot"
+          git config --global user.email "bot@imperiumluxurymiami.com"
+
+          publish () {
+            REPO="$1"; SRC="$2"; DEST="$3"
+            echo "Publishing to $REPO/$DEST"
+            rm -rf _target
+            git clone --depth 1 "https://x-access-token:${GH_PAT}@github.com/${REPO}.git" _target
+            cp "$SRC" "_target/${DEST}"
+            cd _target
+            if git diff --quiet; then
+              echo "No changes for $REPO."
+            else
+              git add "${DEST}"
+              git commit -m "chore: publish dashboard $(date -u +%Y-%m-%dT%H:%MZ)"
+              git push
+            fi
+            cd ..
+          }
+
+          publish "raizerandco/imperium-ceo"  "out/growth/index.html"       "index.html"
+          publish "raizerandco/imperium-ops"  "out/operational/index.html"  "index.html"
