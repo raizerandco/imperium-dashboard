@@ -61,6 +61,8 @@ async function fetchAll(table) {
     broker_address: r.broker_address, broker_ein: r.broker_ein,
     notes: r.notes, payment: r.payment_type,
     signed_pdf_url: r.signed_pdf_url ?? null,
+    id: r.id, delivery_time: r.delivery_time ?? null, pickup_time: r.pickup_time ?? null,
+    paid: r.paid ?? false,
   }));
 
   const sheetTotal = R.reduce((s, r) => s + (Number(r.total) || 0), 0);
@@ -132,7 +134,9 @@ async function fetchAll(table) {
           delivery: r.delivery, pickup: r.pickup, phone: r.phone, email: r.email,
           deposit: r.deposit, price: r.price, notes: r.notes,
           signed_pdf_url: r.signed_pdf_url,
-          total: null, net: null, fees: null,
+          id: r.id, delivery_time: r.delivery_time, pickup_time: r.pickup_time, paid: r.paid,
+          total: r.total,
+          net: null, fees: null,
           broker: null, broker_commission: null, broker_rate: null, payment: null,
         })),
         unmatched: [], sheet: null, orphans: {},
