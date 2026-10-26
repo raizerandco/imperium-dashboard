@@ -2,8 +2,8 @@ name: Publish Imperium Dashboards
 
 on:
   schedule:
-    - cron: "*/20 * * * *"   # every 20 minutes (UTC). Adjust or remove as you like.
-  workflow_dispatch: {}        # lets you run it manually from the Actions tab.
+    - cron: "*/20 * * * *"
+  workflow_dispatch: {}
 
 concurrency:
   group: publish-dashboards
@@ -31,15 +31,20 @@ jobs:
         env:
           GH_PAT: ${{ secrets.GH_PAT }}
         run: |
-          set -e
+          if [ -z "$GH_PAT" ]; then
+            echo "::error::GH_PAT secret is EMPTY or not set on imperium-dashboard. Add it in Settings > Secrets and variables > Actions."
+            exit 1
+          fi
           git config --global user.name "imperium-bot"
           git config --global user.email "bot@imperiumluxurymiami.com"
 
           publish () {
             REPO="$1"; SRC="$2"; DEST="$3"
-            echo "Publishing to $REPO/$DEST"
             rm -rf _target
-            git clone --depth 1 "https://x-access-token:${GH_PAT}@github.com/${REPO}.git" _target
+            if ! git clone --depth 1 "https://x-access-token:${GH_PAT}@github.com/${REPO}.git" _target 2> err.txt; then
+              echo "::error::CLONE/AUTH failed for ${REPO}: $(tr -d '\r' < err.txt | tr '\n' ' ' | tail -c 300)"
+              exit 1
+            fi
             cp "$SRC" "_target/${DEST}"
             cd _target
             if git diff --quiet; then
@@ -47,7 +52,10 @@ jobs:
             else
               git add "${DEST}"
               git commit -m "chore: publish dashboard $(date -u +%Y-%m-%dT%H:%MZ)"
-              git push
+              if ! git push 2> perr.txt; then
+                echo "::error::PUSH failed for ${REPO}: $(tr -d '\r' < perr.txt | tr '\n' ' ' | tail -c 300)"
+                exit 1
+              fi
             fi
             cd ..
           }
