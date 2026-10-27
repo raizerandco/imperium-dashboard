@@ -231,6 +231,7 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
       <div><h1>IMPERIUM <b>Luxury</b></h1><div class="sub">Miami · Rental Dashboard</div></div></div>
     <div style="display:flex;gap:10px;align-items:center">
       <div class="topright" id="genstamp"></div>
+      <button class="btn" id="themeBtn" onclick="toggleTheme()" title="Toggle light / dark">Light</button>
       <button class="btn" onclick="copyData()">Copy data</button>
       <button class="btn solid" onclick="downloadData()">Export backup</button>
     </div>
@@ -1051,6 +1052,97 @@ maybeGate();
     }catch(e){alert('Could not generate docs: '+e.message);}
   };
 })();
+</script>
+
+<style id="imp-premium">
+/* ---- premium depth + glass tokens (dark = default) ---- */
+:root{
+  --glass:rgba(20,20,26,.62);
+  --glass-bd:rgba(255,255,255,.06);
+  --glass-hi:rgba(255,255,255,.05);
+  --elev:0 10px 30px rgba(0,0,0,.45),0 2px 8px rgba(0,0,0,.40);
+  --elev-h:0 20px 54px rgba(0,0,0,.62),0 0 0 1px rgba(212,175,55,.16);
+  --elev-modal:0 44px 120px rgba(0,0,0,.78);
+  --glow1:rgba(212,175,55,.07); --glow2:rgba(212,175,55,.03);
+}
+/* ---- light theme ---- */
+:root[data-theme="light"]{
+  --bg:#f4f2ec; --bg2:#ece9e1; --panel:#ffffff; --panel2:#faf8f3;
+  --line:#e4e0d6; --line2:#d9d4c8;
+  --gold:#b8912f; --gold-br:#9a7726; --gold-dp:#cca95c; --gold-soft:rgba(184,145,47,.12);
+  --txt:#1d1b16; --mut:#6f6c62; --mut2:#9b978b;
+  --ok:#2f9e6b; --warn:#b5872a; --bad:#c0505a;
+  --glass:rgba(255,255,255,.60);
+  --glass-bd:rgba(30,26,16,.08);
+  --glass-hi:rgba(255,255,255,.85);
+  --elev:0 10px 30px rgba(70,58,22,.10),0 2px 8px rgba(70,58,22,.06);
+  --elev-h:0 20px 48px rgba(70,58,22,.16),0 0 0 1px rgba(184,145,47,.28);
+  --elev-modal:0 44px 110px rgba(50,38,12,.26);
+  --glow1:rgba(184,145,47,.10); --glow2:rgba(184,145,47,.05);
+}
+body{background:
+  radial-gradient(900px 520px at 10% -8%, var(--glow1), transparent 60%),
+  radial-gradient(820px 520px at 112% -2%, var(--glow2), transparent 55%),
+  var(--bg);
+  background-attachment:fixed;}
+/* glass surfaces */
+.panel,.kpi,.modal{background:var(--glass);
+  -webkit-backdrop-filter:blur(16px) saturate(1.15);backdrop-filter:blur(16px) saturate(1.15);
+  border:1px solid var(--glass-bd);box-shadow:var(--elev);position:relative}
+.panel::after,.kpi::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;box-shadow:inset 0 1px 0 var(--glass-hi)}
+/* hover elevation */
+.panel{transition:box-shadow .26s ease,border-color .26s ease,transform .26s ease}
+.panel:hover{box-shadow:var(--elev-h);border-color:var(--gold-dp)}
+.kpi{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.kpi:hover{transform:translateY(-3px);box-shadow:var(--elev-h);border-color:var(--gold-dp)}
+.car{transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease}
+.car:hover{transform:translateY(-4px);box-shadow:var(--elev-h);border-color:var(--gold-dp)}
+.btn{transition:transform .16s ease,box-shadow .16s ease,background .16s,border-color .16s,filter .16s}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(212,175,55,.18)}
+.btn.solid:hover{transform:translateY(-1px);box-shadow:0 10px 26px rgba(212,175,55,.34)}
+nav.tabs button{transition:.18s;border-radius:9px}
+nav.tabs button:hover{background:var(--gold-soft);color:var(--txt)}
+nav.tabs button.active{color:var(--gold-br);background:var(--gold-soft);box-shadow:inset 0 -2px 0 var(--gold)}
+.modal{box-shadow:var(--elev-modal)}
+#tip{background:var(--glass);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#themeBtn{min-width:64px}
+/* light-mode fixes for a few hardcoded darks */
+:root[data-theme="light"] .carlabel{background:#f3f0e9}
+:root[data-theme="light"] .carrow:hover .carlabel{background:#ece9e1}
+:root[data-theme="light"] td{border-bottom:1px solid #ece9e1}
+:root[data-theme="light"] tr:hover td{background:rgba(184,145,47,.06)}
+:root[data-theme="light"] .mrow{border-bottom:1px solid #ece9e1}
+:root[data-theme="light"] #tip{background:rgba(255,255,255,.82);color:var(--txt)}
+:root[data-theme="light"] .btn.solid{background:linear-gradient(180deg,#d9b24e,#c9a24b);color:#2a2008;border-color:#c9a24b}
+:root[data-theme="light"] #ov{background:rgba(60,52,30,.34)}
+/* light: calendar / gantt + remaining hardcoded darks */
+:root[data-theme="light"] .calscroll{background:#faf8f3}
+:root[data-theme="light"] .calhead{background:#f3f0e9}
+:root[data-theme="light"] .cornercell{background:#f3f0e9}
+:root[data-theme="light"] .daycell{border-right:1px solid #ece9e1}
+:root[data-theme="light"] .daycell .dow{color:#b5b0a2}
+:root[data-theme="light"] .daycell.we{background:rgba(30,26,16,.03)}
+:root[data-theme="light"] .wecol{background:rgba(30,26,16,.03)}
+:root[data-theme="light"] .carrow{border-bottom:1px solid #ece9e1}
+:root[data-theme="light"] .carrow:hover{background:rgba(184,145,47,.05)}
+:root[data-theme="light"] .kbd{background:#eceae2}
+:root[data-theme="light"] .chip{background:#f3f0e9}
+:root[data-theme="light"] .car .plate{background:#eceae2}
+:root[data-theme="light"] .car .util .bar2{background:#ece9e1}
+:root[data-theme="light"] .hbar .tr{background:#ece9e1}
+:root[data-theme="light"] .rev-item code{background:#f3f0e9}
+:root[data-theme="light"] .goalw .gbar{background:#ece9e1}
+:root[data-theme="light"] .goalw .gk .kpi{background:#faf8f3}
+:root[data-theme="light"] .goalw .gghost{background:#e4e0d6}
+:root[data-theme="light"] .car .plate{color:var(--txt)}
+</style>
+<script>
+function applyTheme(t){var r=document.documentElement;
+  if(t==='light')r.setAttribute('data-theme','light');else r.removeAttribute('data-theme');
+  var b=document.getElementById('themeBtn');if(b)b.textContent=(t==='light'?'Dark':'Light');
+  try{localStorage.setItem('imp_theme',t);}catch(e){}}
+function toggleTheme(){var cur=document.documentElement.getAttribute('data-theme')==='light'?'light':'dark';applyTheme(cur==='light'?'dark':'light');}
+(function(){var t='dark';try{t=localStorage.getItem('imp_theme')||'dark';}catch(e){}applyTheme(t);})();
 </script>
 </body>
 </html>
