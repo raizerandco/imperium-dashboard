@@ -241,6 +241,7 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
     <button data-v="fleet">Fleet</button>
     <button data-v="cust">Customers</button>
     <button data-v="rentals">Rentals</button>
+    <button data-v="req" class="finonly">Requests <span id="reqBadge" class="reqbadge" style="display:none"></span></button>
     <button data-v="ins">Metrics</button>
     <button data-v="rev">Data review</button>
     <button data-v="fin" class="fin finonly">Financials</button>
@@ -877,7 +878,7 @@ if(AUTO_REFRESH_MINUTES>0){setTimeout(function(){
 }, AUTO_REFRESH_MINUTES*60000);}
 if(MODE==='operational'){
   document.querySelectorAll('.finonly').forEach(b=>b.remove());
-  ['v-fin','v-brk','v-b2b'].forEach(id=>{var e=document.getElementById(id); if(e) e.remove();});
+  ['v-fin','v-brk','v-b2b','v-req'].forEach(id=>{var e=document.getElementById(id); if(e) e.remove();});
   var hdr=document.querySelector('header.top'); if(hdr) hdr.remove();
   var wr=document.querySelector('.wrap'); if(wr) wr.style.paddingTop='12px';
   var nv=document.querySelector('nav.tabs'); if(nv) nv.style.margin='0 0 14px';
@@ -919,9 +920,10 @@ maybeGate();
 </div>
 <script>
   var NEW_RENTAL_URL='https://raizerandco.github.io/imperium-rental/new-rental.html';
-  window.openRentalForm=function(){
+  window.openRentalForm=function(requestId){
     var fr=document.getElementById('nrFrame');
-    if(!fr.getAttribute('src')) fr.setAttribute('src',NEW_RENTAL_URL);
+    if(requestId){ fr.setAttribute('src',NEW_RENTAL_URL+'?request='+encodeURIComponent(requestId)); }
+    else if(!fr.getAttribute('src')){ fr.setAttribute('src',NEW_RENTAL_URL); }
     document.getElementById('formOv').classList.add('show');
     document.body.style.overflow='hidden';
   };
@@ -929,6 +931,75 @@ maybeGate();
     document.getElementById('formOv').classList.remove('show');
     document.body.style.overflow='';
   };
+</script>
+<!-- ===== IMPERIUM - Requests tab ===== -->
+<style>
+.reqbadge{display:inline-block;min-width:16px;padding:0 5px;height:16px;line-height:16px;font-size:10px;font-weight:700;text-align:center;background:var(--gold);color:#1a1407;border-radius:9px;margin-left:4px;vertical-align:middle}
+#v-req .reqempty{color:var(--mut);padding:34px;text-align:center}
+.reqcard{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--elev)}
+.reqcard .rqhead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:12px}
+.reqcard .rqname{font-family:var(--serif);font-size:19px;color:var(--txt)}
+.reqcard .rqtype{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold-br);border:1px solid var(--gold-dp);border-radius:20px;padding:2px 8px;margin-left:6px;vertical-align:middle}
+.reqcard .rqcar{color:var(--mut);font-size:13px;margin-top:3px}
+.reqcard .rqtot{text-align:right;font-family:var(--mono);font-weight:700;font-size:18px;color:var(--gold-br);white-space:nowrap}
+.reqcard .rqdep{font-size:11px;color:var(--mut2);font-weight:400}
+.reqcard .rqgrid{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;font-size:13px;margin-bottom:10px}
+.reqcard .rqk{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:.6px;padding-top:2px}
+.reqcard .rqv{color:var(--txt)}
+.reqcard .rqdocs{display:flex;gap:12px;flex-wrap:wrap;margin:2px 0 12px}
+.reqcard .rqdoc{width:120px}
+.reqcard .rqdoc .rqdl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin-bottom:4px}
+.reqcard .rqdoc img{width:120px;height:80px;object-fit:cover;border-radius:7px;border:1px solid var(--line2)}
+.reqcard .rqact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+</style>
+<section class="view" id="v-req">
+  <div class="panel">
+    <div class="ph"><div><h2>Requests</h2><div class="muted">Broker and client requests from the public form - accept to open a prefilled New Rental</div></div>
+      <button class="btn" onclick="loadRequests()">Refresh</button></div>
+    <div id="reqList" style="margin-top:8px"><div class="muted">Loading requests...</div></div>
+  </div>
+</section>
+<script>
+var REQ_API2='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/requests';
+var _reqs=[];
+function reqCall(payload,cb){var pw=ceoPw();if(!pw){cb({ok:false,error:'no password'});return;}payload.password=pw;
+  fetch(REQ_API2,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(x){return x.json();}).then(cb).catch(function(){cb({ok:false,error:'network'});});}
+function updateReqBadge(n){var b=document.getElementById('reqBadge');if(!b)return;if(n>0){b.textContent=n;b.style.display='';}else{b.style.display='none';}}
+function rqDate(s){return s?String(s).slice(0,10):'-';}
+function loadRequests(){var list=document.getElementById('reqList');if(list)list.innerHTML='<div class="muted">Loading requests...</div>';
+  reqCall({action:'list'},function(res){if(!res||!res.ok){if(list)list.innerHTML='<div class="reqempty">Could not load requests'+(res&&res.error?(' ('+res.error+')'):'')+'</div>';return;}
+    _reqs=res.requests||[];updateReqBadge(_reqs.length);renderRequests();});}
+function renderRequests(){var list=document.getElementById('reqList');if(!list)return;
+  if(!_reqs.length){list.innerHTML='<div class="reqempty">No pending requests.</div>';return;}
+  list.innerHTML=_reqs.map(function(q){
+    var broker=q.broker_name?('<div class="rqk">Broker</div><div class="rqv">'+_esc(q.broker_name)+(q.broker_company?(' &middot; '+_esc(q.broker_company)):'')+(q.broker_phone?(' &middot; '+_esc(q.broker_phone)):'')+(q.broker_email?(' &middot; '+_esc(q.broker_email)):'')+'</div>'):'';
+    var rep=q.sales_rep?('<div class="rqk">Sales rep</div><div class="rqv">'+_esc(q.sales_rep)+'</div>'):'';
+    return '<div class="reqcard" id="rq_'+q.id+'">'
+      +'<div class="rqhead"><div><div class="rqname">'+_esc(q.full_name||'-')+(q.client_type?' <span class="rqtype">'+_esc(q.client_type)+'</span>':'')+'</div>'
+      +'<div class="rqcar">'+_esc(q.car_make||'')+' '+_esc(q.car_model||'')+(q.car_color?(' &middot; '+_esc(q.car_color)):'')+'</div></div>'
+      +'<div class="rqtot">'+(q.total!=null?('$'+Number(q.total).toLocaleString('en-US')):'')+'<div class="rqdep">dep '+(q.deposit!=null?('$'+Number(q.deposit).toLocaleString('en-US')):'-')+'</div></div></div>'
+      +'<div class="rqgrid">'
+      +'<div class="rqk">Dates</div><div class="rqv">'+rqDate(q.pickup_date)+' &rarr; '+rqDate(q.return_date)+' ('+(q.days||'-')+'d)</div>'
+      +'<div class="rqk">Contact</div><div class="rqv">'+_esc(q.phone||'-')+(q.email?(' &middot; '+_esc(q.email)):'')+'</div>'
+      +broker+rep+'</div>'
+      +'<div class="rqdocs" id="rqdocs_'+q.id+'"></div>'
+      +'<div class="rqact"><button class="btn" onclick="viewReqDocs(\''+q.id+'\')">View documents</button>'
+      +'<button class="btn" onclick="dismissReq(\''+q.id+'\')">Dismiss</button>'
+      +'<button class="btn solid" onclick="acceptReq(\''+q.id+'\')">Accept &amp; fill rental</button></div>'
+      +'</div>';}).join('');}
+function viewReqDocs(id){var box=document.getElementById('rqdocs_'+id);if(!box)return;if(box.innerHTML){box.innerHTML='';return;}box.innerHTML='<div class="muted">Loading...</div>';
+  reqCall({action:'get',id:id},function(res){if(!res||!res.ok){box.innerHTML='<div class="muted">Could not load documents</div>';return;}
+    var d=res.docs||{};var items=[['doc_license_front','License front'],['doc_license_back','License back'],['doc_passport','Passport'],['doc_insurance','Insurance']];
+    var html=items.map(function(it){var url=d[it[0]];if(!url)return '';var prev=/\.(jpe?g|png|webp|gif)(\?|$)/i.test(url);
+      return '<div class="rqdoc"><div class="rqdl">'+it[1]+'</div>'+(prev?'<a href="'+url+'" target="_blank" rel="noopener"><img src="'+url+'"></a>':'<a class="docpdf" href="'+url+'" target="_blank" rel="noopener">Open file</a>')+'</div>';}).join('');
+    box.innerHTML=html||'<div class="muted">No documents uploaded.</div>';});}
+function acceptReq(id){ openRentalForm(id); }
+function dismissReq(id){if(!confirm('Dismiss this request?'))return;reqCall({action:'set_status',id:id,status:'dismissed'},function(res){if(res&&res.ok){_reqs=_reqs.filter(function(x){return x.id!==id;});updateReqBadge(_reqs.length);renderRequests();}});}
+document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b&&b.dataset.v==='req')loadRequests();});
+(function(){ if(typeof window.closeRentalForm==='function'){ var _oc=window.closeRentalForm; window.closeRentalForm=function(){ _oc(); if(MODE==='growth') setTimeout(loadRequests,400); }; } })();
+(function badgeInit(){ if(MODE!=='growth')return; var tries=0; var t=setInterval(function(){tries++;
+  var g=document.getElementById('gate'); var vis=g&&getComputedStyle(g).display!=='none'; var pw='';try{pw=sessionStorage.getItem('imp_pw')||'';}catch(e){}
+  if(!vis&&pw){clearInterval(t);loadRequests();} if(tries>120)clearInterval(t); },500); })();
 </script>
 <!-- ===== IMPERIUM - Rentals tab (paste right before </body>) ===== -->
 <style>
