@@ -155,11 +155,14 @@ async function fetchAll(table) {
       };
     }
     const build_date = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+    // CEO (growth) dashboard is password-gated; OPS (operational / TV) stays open.
+    // Hash is djb2 of the access password "Imp-rental-Qv83kP2z" (same as the docs function).
+    const gate = mode === "growth" ? "1045169636" : "0";
     return String(html)
       .split("__DATA__").join(JSON.stringify(p))
       .split("__MODE__").join(mode)
       .split("__BUILD__").join(build_date)
-      .split("__GATE__").join("0");
+      .split("__GATE__").join(gate);
   }
 
   const outDir = path.join(__dirname, "out");

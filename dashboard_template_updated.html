@@ -451,6 +451,42 @@ var BRK_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/set-broker';
 var BRK_KEY='imp-brk-7Rk93Qz2v';
 function beVal(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
 function saveBroker(ri){var r=DATA.rentals[ri];if(!r)return;var name=beVal('be_name'),email=beVal('be_email'),rateP=beVal('be_rate'),comm=beVal('be_comm'),addr=beVal('be_addr'),ein=beVal('be_ein');var rate=rateP!==''?(Number(rateP)/100):null,commission=comm!==''?Number(comm):null;var mm=document.getElementById('be_msg');if(mm)mm.textContent='Saving...';fetch(BRK_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:BRK_KEY,id:r.id,broker_name:name,broker_email:email,broker_rate:rate,broker_commission:commission,broker_address:addr,broker_ein:ein})}).then(function(x){return x.json();}).then(function(res){if(res&&res.ok){r.broker=name||null;r.broker_name=name||null;r.broker_email=email||null;r.broker_rate=rate;r.broker_commission=commission;r.broker_address=addr||null;r.broker_ein=ein||null;if(mm)mm.textContent='Saved.';if(MODE==='growth'&&typeof renderBrokers==='function')renderBrokers();}else{if(mm)mm.textContent='Error: '+((res&&res.error)||'');}}).catch(function(){if(mm)mm.textContent='Network error';});}
+/* ---- Identity documents (private bucket via gated edge function) ---- */
+var DOCS_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/docs';
+var DOC_LABELS={license:'Driver license',insurance:'Insurance',passport:'Passport'};
+var DOC_SETS={american:['license','insurance'],tourist:['license','passport']};
+var _docState={};
+function docsCall(payload,cb){var pw=ceoPw();if(!pw){cb&&cb({ok:false,error:'no password'});return;}
+  payload.password=pw;
+  fetch(DOCS_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify(payload)})
+    .then(function(x){return x.json();}).then(function(res){cb&&cb(res);})
+    .catch(function(){cb&&cb({ok:false,error:'network'});});}
+function loadDocs(ri){var r=DATA.rentals[ri];if(!r||!r.id)return;var body=document.getElementById('docsBody');if(!body)return;
+  docsCall({action:'list',rental_id:r.id},function(res){
+    if(!res||!res.ok){body.innerHTML='<div class="muted">Could not load documents'+(res&&res.error?(' ('+res.error+')'):'')+'</div>';return;}
+    _docState[r.id]={client_type:res.client_type||r.client_type||null,docs:res.docs||{}};renderDocsBody(ri);});}
+function renderDocsBody(ri){var r=DATA.rentals[ri];var body=document.getElementById('docsBody');if(!body)return;
+  var st=_docState[r.id]||{docs:{}};var type=st.client_type;
+  var chooser='<div class="doctype"><span class="muted" style="margin-right:2px">Client type</span>'
+    +'<button class="btn '+(type==='american'?'solid':'')+'" onclick="setDocType('+ri+',\'american\')">American</button>'
+    +'<button class="btn '+(type==='tourist'?'solid':'')+'" onclick="setDocType('+ri+',\'tourist\')">Tourist</button></div>';
+  var slots=DOC_SETS[type]||[];var slotsHtml='';
+  if(!type){slotsHtml='<div class="muted" style="margin-top:4px">Select the client type to see the required documents.</div>';}
+  else{slotsHtml='<div class="docgrid">'+slots.map(function(sl){var url=st.docs[sl];var isPdf=url&&/\.pdf(\?|$)/i.test(url);
+     var thumb=url?(isPdf?'<a class="docpdf" href="'+url+'" target="_blank" rel="noopener">Open PDF</a>':'<a href="'+url+'" target="_blank" rel="noopener"><img class="docthumb" src="'+url+'" alt="'+DOC_LABELS[sl]+'"></a>'):'<div class="docthumb empty">No file</div>';
+     return '<div class="docslot"><div class="dl">'+DOC_LABELS[sl]+'</div>'+thumb
+       +'<label class="btn upl">'+(url?'Replace':'Upload')+'<input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadDoc(event,'+ri+',\''+sl+'\')"></label>'
+       +(url?'<button class="btn" onclick="deleteDoc('+ri+',\''+sl+'\')">Remove</button>':'')+'</div>';}).join('')+'</div>';}
+  body.innerHTML=chooser+slotsHtml+'<div id="docmsg" class="muted" style="margin-top:8px"></div>';}
+function setDocType(ri,type){var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Saving...';
+  docsCall({action:'set_type',rental_id:r.id,client_type:type},function(res){if(res&&res.ok){_docState[r.id]=_docState[r.id]||{docs:{}};_docState[r.id].client_type=type;r.client_type=type;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
+function uploadDoc(ev,ri,slot){var f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Uploading...';
+  function send(ct,b64){docsCall({action:'upload',rental_id:r.id,slot:slot,content_type:ct,data:b64},function(res){
+    if(res&&res.ok){_docState[r.id]=_docState[r.id]||{docs:{}};_docState[r.id].docs[slot]=res.url;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
+  if(f.type==='application/pdf'){var fr=new FileReader();fr.onload=function(){send('application/pdf',fr.result);};fr.readAsDataURL(f);return;}
+  var fr2=new FileReader();fr2.onload=function(){var img=new Image();img.onload=function(){var max=1600,w=img.width,h=img.height,sc=Math.min(1,max/Math.max(w,h));var cw=Math.round(w*sc),ch=Math.round(h*sc);var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.getContext('2d').drawImage(img,0,0,cw,ch);send('image/jpeg',cv.toDataURL('image/jpeg',0.82));};img.onerror=function(){if(msg)msg.textContent='Could not read image';};img.src=fr2.result;};fr2.readAsDataURL(f);}
+function deleteDoc(ri,slot){if(!confirm('Remove this document?'))return;var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Removing...';
+  docsCall({action:'delete',rental_id:r.id,slot:slot},function(res){if(res&&res.ok){if(_docState[r.id])_docState[r.id].docs[slot]=null;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
 function openModal(ri){
   const r=DATA.rentals[ri];if(!r)return;const c=r.car;
   const del=r.delivery?`<div class="lv">${r.delivery}</div>`:`<div class="lv empty">Not specified yet</div>`;
@@ -489,8 +525,10 @@ function openModal(ri){
         <input id="be_ein" placeholder="EIN" value="${(r.broker_ein||'').replace(/"/g,'&quot;')}">
         <button class="btn solid" onclick="saveBroker(${ri})">Save broker</button><span id="be_msg" class="muted" style="margin-left:8px"></span>
       </div></div>`:''}
+    ${MODE==='growth'?`<div class="loc" style="padding-top:0"><div class="lh">Documents</div><div id="docsBody" class="docsbody"><div class="muted">Loading documents...</div></div></div>`:''}
     <div class="mf">${(function(){var u=r.signed_pdf_url||r.contract||r.signed_url||r.signed;return u?'<a class="btn solid" href="'+u+'" target="_blank" rel="noopener" style="text-decoration:none">Contract</a>':'';})()}${(r.broker||r.broker_name)?'<button class="btn" onclick="genBrokerDocs('+ri+')">Broker docs</button>':''}<button class="btn" onclick="closeModal()">Close</button></div>`;
   document.getElementById('ov').classList.add('show');
+  if(MODE==='growth')loadDocs(ri);
 }
 function closeModal(){document.getElementById('ov').classList.remove('show');}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
@@ -555,7 +593,10 @@ function openCustEdit(name){
   var val=function(f,c){return c||(rs.map(function(r){return r[f];}).filter(Boolean).pop()||'');};
   var ph=val('phone',cur.phone),em=val('email',cur.email),co=natName(val('country',cur.country));
   var row=function(lbl,id,v){return '<div class="mrow"><span class="k">'+lbl+'</span><input id="'+id+'" value="'+_esc(v)+'" style="flex:1;max-width:62%;background:var(--bg2);border:1px solid var(--line2);border-radius:7px;padding:7px 9px;color:var(--txt);font-size:13px;font-family:var(--mono)"></div>';};
-  document.getElementById('modal').innerHTML='<div class="mh"><div class="stripe" style="background:var(--gold)"></div><div class="c1">Edit contact</div><div class="c2">'+_esc(name)+'</div></div>'+'<div class="mb"><div style="font-size:11px;color:var(--mut);margin:2px 0 12px;line-height:1.5">Saved on this device (survives refresh). Use <b style="color:var(--gold-br)">Export corrections</b> to make it permanent everywhere.</div>'+row('Phone','ce_phone',ph)+row('Email','ce_email',em)+row('Country','ce_country',co)+'</div>'+'<div class="mf"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn solid" id="ceSave">Save</button></div>';
+  var docLinks=DATA.rentals.map(function(r,i){return {r:r,i:i};}).filter(function(o){return o.r.cust===name&&o.r.id;})
+    .map(function(o){return '<button class="btn" style="margin:3px 6px 3px 0" onclick="closeModal();openModal('+o.i+')">#'+o.r.ag+' &middot; '+(o.r.car?(o.r.car.make+' '+o.r.car.model):o.r.plate)+'</button>';}).join('');
+  var docsBlock='<div class="loc" style="padding-top:0"><div class="lh">Documents</div><div class="muted" style="margin-bottom:8px">Open a rental to view or upload its ID documents.</div>'+(docLinks||'<span class="muted">No rentals on record</span>')+'</div>';
+  document.getElementById('modal').innerHTML='<div class="mh"><div class="stripe" style="background:var(--gold)"></div><div class="c1">Edit contact</div><div class="c2">'+_esc(name)+'</div></div>'+'<div class="mb"><div style="font-size:11px;color:var(--mut);margin:2px 0 12px;line-height:1.5">Saved on this device (survives refresh). Use <b style="color:var(--gold-br)">Export corrections</b> to make it permanent everywhere.</div>'+row('Phone','ce_phone',ph)+row('Email','ce_email',em)+row('Country','ce_country',co)+'</div>'+docsBlock+'<div class="mf"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn solid" id="ceSave">Save</button></div>';
   document.getElementById('ov').classList.add('show');
   document.getElementById('ceSave').onclick=function(){var ed=loadCustEdits();ed[name]={phone:document.getElementById('ce_phone').value.trim(),email:document.getElementById('ce_email').value.trim(),country:document.getElementById('ce_country').value.trim()};saveCustEditsObj(ed);applyCustEdits();renderCust();try{renderInsights();}catch(e){}closeModal();toast('Contact updated on this device');};
 }
@@ -813,9 +854,13 @@ function showCalendar(){
 }
 function _gh(s){var h=5381;for(var i=0;i<s.length;i++){h=(h*33+s.charCodeAt(i))>>>0;}return h;}
 function gateSubmit(){var v=document.getElementById('gatePw').value||'';
-  if(GATE_HASH && _gh(v)===GATE_HASH){ try{localStorage.setItem('imp_auth',String(GATE_HASH));}catch(e){} document.getElementById('gate').style.display='none'; }
+  if(GATE_HASH && _gh(v)===GATE_HASH){ try{localStorage.setItem('imp_auth',String(GATE_HASH));}catch(e){} try{sessionStorage.setItem('imp_pw',v);}catch(e){} document.getElementById('gate').style.display='none'; }
   else { document.getElementById('gateErr').textContent='Incorrect password'; document.getElementById('gatePw').value=''; }
 }
+// password used for the gated docs edge function (server-side validated)
+function ceoPw(){ var p=''; try{p=sessionStorage.getItem('imp_pw')||'';}catch(e){}
+  if(!p){ p=window.prompt('Enter the access password to manage documents')||''; if(p){try{sessionStorage.setItem('imp_pw',p);}catch(e){}} }
+  return p; }
 function maybeGate(){ if(!GATE_HASH) return; var ok=false;
   try{ ok=(localStorage.getItem('imp_auth')===String(GATE_HASH)); }catch(e){}
   if(!ok){ var g=document.getElementById('gate'); g.style.display='flex'; setTimeout(function(){var i=document.getElementById('gatePw'); if(i)i.focus();},100); }
@@ -1135,6 +1180,16 @@ nav.tabs button.active{color:var(--gold-br);background:var(--gold-soft);box-shad
 :root[data-theme="light"] .goalw .gk .kpi{background:#faf8f3}
 :root[data-theme="light"] .goalw .gghost{background:#e4e0d6}
 :root[data-theme="light"] .car .plate{color:var(--txt)}
+/* identity documents */
+.doctype{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.docgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:560px){.docgrid{grid-template-columns:1fr}}
+.docslot{display:flex;flex-direction:column;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.docslot .dl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
+.docthumb{display:block;width:100%;height:150px;border-radius:9px;object-fit:cover;background:var(--bg2);border:1px solid var(--line2)}
+.docthumb.empty{display:grid;place-items:center;color:var(--mut2);font-size:12px}
+.docslot .btn.upl{text-align:center;cursor:pointer}
+.docpdf{display:grid;place-items:center;height:150px;border-radius:9px;background:var(--gold-soft);border:1px solid var(--gold-dp);color:var(--gold-br);font-size:13px;text-decoration:none}
 </style>
 <script>
 function applyTheme(t){var r=document.documentElement;
