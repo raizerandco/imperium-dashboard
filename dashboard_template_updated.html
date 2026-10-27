@@ -659,8 +659,8 @@ function renderBrokers(){
   DATA.rentals.forEach(r=>{ if(!r.broker) return;
     if(!groups[r.broker]) groups[r.broker]={name:r.broker,email:r.broker_email,address:r.broker_address,ein:r.broker_ein,rows:[]};
     groups[r.broker].rows.push(r); });
-  const keys=Object.keys(groups).sort((a,b)=>
-    groups[b].rows.reduce((s,r)=>s+commissionOf(r),0)-groups[a].rows.reduce((s,r)=>s+commissionOf(r),0));
+  const latest=g=>Math.max.apply(null,g.rows.map(r=>+r.s));
+  const keys=Object.keys(groups).sort((a,b)=>latest(groups[b])-latest(groups[a]));
   let h='';
   if(!keys.length){ document.getElementById('brkBody').innerHTML='<div class="muted">No broker-attributed rentals yet. Send a rental with broker details and it will appear here.</div>'; return; }
   const grand=keys.reduce((s,k)=>s+groups[k].rows.reduce((a,r)=>a+commissionOf(r),0),0);
@@ -668,7 +668,7 @@ function renderBrokers(){
     <div class="kpi"><div class="lbl">Brokers</div><div class="val g">${keys.length}</div></div>
     <div class="kpi"><div class="lbl">Broker-sourced rentals</div><div class="val">${keys.reduce((s,k)=>s+groups[k].rows.length,0)}</div></div>
     <div class="kpi"><div class="lbl">Total commissions due</div><div class="val g">${fmtUSD(grand)}</div></div></div>`;
-  keys.forEach(k=>{ const g=groups[k]; const tot=g.rows.reduce((s,r)=>s+commissionOf(r),0);
+  keys.forEach(k=>{ const g=groups[k]; g.rows.sort((x,y)=>(+y.s)-(+x.s)); const tot=g.rows.reduce((s,r)=>s+commissionOf(r),0);
     h+=`<div class="panel" style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px">
         <div><div style="font-family:var(--serif);font-size:22px;color:var(--gold-br)">${g.name}</div>
