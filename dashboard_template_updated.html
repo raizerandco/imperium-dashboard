@@ -334,6 +334,9 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
 .paidtg.on .dot:after{left:22px}
 .paidtg .lbl{font-size:11px;font-weight:700;letter-spacing:.5px}
 .paidtg.off .lbl{color:#e6866f}.paidtg.on .lbl{color:#7fd9a0}
+.brkedit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.brkedit input{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;font-family:var(--sans)}
+.brkedit button{grid-column:1/3;justify-self:start}
 </style>
 <div id="ov" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
 <div id="toast"></div>
@@ -443,6 +446,10 @@ var PAID_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 function paidState(r){try{var v=localStorage.getItem('paid_'+r.id);if(v!==null)return v==='1';}catch(e){}return !!r.paid;}
 function paidToggleHtml(r){var on=paidState(r);return '<span class="paidtg '+(on?'on':'off')+'" onclick="togglePaid(event,'+r.id+')" title="Toggle paid"><span class="dot"></span><span class="lbl">'+(on?'PAID':'NOT PAID')+'</span></span>';}
 function togglePaid(ev,id){ev.stopPropagation();var el=ev.currentTarget;var now=!el.classList.contains('on');el.classList.toggle('on',now);el.classList.toggle('off',!now);var l=el.querySelector('.lbl');if(l)l.textContent=now?'PAID':'NOT PAID';try{localStorage.setItem('paid_'+id,now?'1':'0');}catch(e){}fetch(PAID_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:PAID_KEY,id:id,paid:now})}).catch(function(){});}
+var BRK_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/set-broker';
+var BRK_KEY='imp-brk-7Rk93Qz2v';
+function beVal(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
+function saveBroker(ri){var r=DATA.rentals[ri];if(!r)return;var name=beVal('be_name'),email=beVal('be_email'),rateP=beVal('be_rate'),comm=beVal('be_comm'),addr=beVal('be_addr'),ein=beVal('be_ein');var rate=rateP!==''?(Number(rateP)/100):null,commission=comm!==''?Number(comm):null;var mm=document.getElementById('be_msg');if(mm)mm.textContent='Saving...';fetch(BRK_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:BRK_KEY,id:r.id,broker_name:name,broker_email:email,broker_rate:rate,broker_commission:commission,broker_address:addr,broker_ein:ein})}).then(function(x){return x.json();}).then(function(res){if(res&&res.ok){r.broker=name||null;r.broker_name=name||null;r.broker_email=email||null;r.broker_rate=rate;r.broker_commission=commission;r.broker_address=addr||null;r.broker_ein=ein||null;if(mm)mm.textContent='Saved.';if(MODE==='growth'&&typeof renderBrokers==='function')renderBrokers();}else{if(mm)mm.textContent='Error: '+((res&&res.error)||'');}}).catch(function(){if(mm)mm.textContent='Network error';});}
 function openModal(ri){
   const r=DATA.rentals[ri];if(!r)return;const c=r.car;
   const del=r.delivery?`<div class="lv">${r.delivery}</div>`:`<div class="lv empty">Not specified yet</div>`;
@@ -471,6 +478,16 @@ function openModal(ri){
     ${r.notes?`<div class="loc" style="padding-top:0"><div class="lh">Notes</div><div class="lp"><div class="pin">✱</div><div class="lv">${r.notes}</div></div></div>`:''}
     ${(MODE==='growth'&&r.payment)?`<div class="loc" style="padding-top:0"><div class="lh">Payment</div><div class="lp"><div class="pin">$</div><div class="lv">${r.payment}</div></div></div>`:''}
     ${(MODE==='growth'&&r.broker)?`<div class="loc" style="padding-top:0"><div class="lh">Broker</div><div class="lp"><div class="pin">◆</div><div><div class="lv">${r.broker}${r.broker_commission!=null?` · commission ${fmtUSD2(r.broker_commission)}`:''}</div></div></div></div>`:''}
+    ${MODE==='growth'?`<div class="loc" style="padding-top:0"><div class="lh">Broker (editable)</div>
+      <div class="brkedit">
+        <input id="be_name" placeholder="Broker name" value="${(r.broker||r.broker_name||'').replace(/"/g,'&quot;')}">
+        <input id="be_email" placeholder="Email" value="${(r.broker_email||'').replace(/"/g,'&quot;')}">
+        <input id="be_rate" placeholder="Rate % e.g. 15" value="${r.broker_rate!=null?(r.broker_rate*100):''}">
+        <input id="be_comm" placeholder="Commission $ (optional)" value="${r.broker_commission!=null?r.broker_commission:''}">
+        <input id="be_addr" placeholder="Address" value="${(r.broker_address||'').replace(/"/g,'&quot;')}">
+        <input id="be_ein" placeholder="EIN" value="${(r.broker_ein||'').replace(/"/g,'&quot;')}">
+        <button class="btn solid" onclick="saveBroker(${ri})">Save broker</button><span id="be_msg" class="muted" style="margin-left:8px"></span>
+      </div></div>`:''}
     <div class="mf">${(function(){var u=r.signed_pdf_url||r.contract||r.signed_url||r.signed;return u?'<a class="btn solid" href="'+u+'" target="_blank" rel="noopener" style="text-decoration:none">Contract</a>':'';})()}${(r.broker||r.broker_name)?'<button class="btn" onclick="genBrokerDocs('+ri+')">Broker docs</button>':''}<button class="btn" onclick="closeModal()">Close</button></div>`;
   document.getElementById('ov').classList.add('show');
 }
