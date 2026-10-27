@@ -472,8 +472,8 @@ function renderDocsBody(ri){var r=DATA.rentals[ri];var body=document.getElementB
     +'<button class="btn '+(type==='tourist'?'solid':'')+'" onclick="setDocType('+ri+',\'tourist\')">Tourist</button></div>';
   var slots=DOC_SETS[type]||[];var slotsHtml='';
   if(!type){slotsHtml='<div class="muted" style="margin-top:4px">Select the client type to see the required documents.</div>';}
-  else{slotsHtml='<div class="docgrid">'+slots.map(function(sl){var url=st.docs[sl];var isPdf=url&&/\.pdf(\?|$)/i.test(url);
-     var thumb=url?(isPdf?'<a class="docpdf" href="'+url+'" target="_blank" rel="noopener">Open PDF</a>':'<a href="'+url+'" target="_blank" rel="noopener"><img class="docthumb" src="'+url+'" alt="'+DOC_LABELS[sl]+'"></a>'):'<div class="docthumb empty">No file</div>';
+  else{slotsHtml='<div class="docgrid">'+slots.map(function(sl){var url=st.docs[sl];var prev=url&&/\.(jpe?g|png|webp|gif)(\?|$)/i.test(url);
+     var thumb=url?(prev?'<a href="'+url+'" target="_blank" rel="noopener"><img class="docthumb" src="'+url+'" alt="'+DOC_LABELS[sl]+'"></a>':'<a class="docpdf" href="'+url+'" target="_blank" rel="noopener">Open file</a>'):'<div class="docthumb empty">No file</div>';
      return '<div class="docslot"><div class="dl">'+DOC_LABELS[sl]+'</div>'+thumb
        +'<label class="btn upl">'+(url?'Replace':'Upload')+'<input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadDoc(event,'+ri+',\''+sl+'\')"></label>'
        +(url?'<button class="btn" onclick="deleteDoc('+ri+',\''+sl+'\')">Remove</button>':'')+'</div>';}).join('')+'</div>';}
@@ -481,10 +481,13 @@ function renderDocsBody(ri){var r=DATA.rentals[ri];var body=document.getElementB
 function setDocType(ri,type){var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Saving...';
   docsCall({action:'set_type',rental_id:r.id,client_type:type},function(res){if(res&&res.ok){_docState[r.id]=_docState[r.id]||{docs:{}};_docState[r.id].client_type=type;r.client_type=type;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
 function uploadDoc(ev,ri,slot){var f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Uploading...';
-  function send(ct,b64){docsCall({action:'upload',rental_id:r.id,slot:slot,content_type:ct,data:b64},function(res){
+  function send(ct,b64,name){docsCall({action:'upload',rental_id:r.id,slot:slot,content_type:ct,data:b64,filename:name},function(res){
     if(res&&res.ok){_docState[r.id]=_docState[r.id]||{docs:{}};_docState[r.id].docs[slot]=res.url;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
-  if(f.type==='application/pdf'){var fr=new FileReader();fr.onload=function(){send('application/pdf',fr.result);};fr.readAsDataURL(f);return;}
-  var fr2=new FileReader();fr2.onload=function(){var img=new Image();img.onload=function(){var max=1600,w=img.width,h=img.height,sc=Math.min(1,max/Math.max(w,h));var cw=Math.round(w*sc),ch=Math.round(h*sc);var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.getContext('2d').drawImage(img,0,0,cw,ch);send('image/jpeg',cv.toDataURL('image/jpeg',0.82));};img.onerror=function(){if(msg)msg.textContent='Could not read image';};img.src=fr2.result;};fr2.readAsDataURL(f);}
+  // downscale large JPEG/PNG; otherwise (HEIC, PDF, small images, any failure) send original bytes
+  function original(){var fr=new FileReader();fr.onload=function(){send(f.type||'application/octet-stream',fr.result,f.name);};fr.onerror=function(){if(msg)msg.textContent='Could not read file';};fr.readAsDataURL(f);}
+  var canCanvas=(f.type==='image/jpeg'||f.type==='image/png');
+  if(!canCanvas||f.size<=2*1024*1024){original();return;}
+  var fr2=new FileReader();fr2.onload=function(){var img=new Image();img.onload=function(){try{var max=1800,w=img.width,h=img.height,sc=Math.min(1,max/Math.max(w,h));var cw=Math.round(w*sc),ch=Math.round(h*sc);var cv=document.createElement('canvas');cv.width=cw;cv.height=ch;cv.getContext('2d').drawImage(img,0,0,cw,ch);send('image/jpeg',cv.toDataURL('image/jpeg',0.85),f.name);}catch(e){original();}};img.onerror=function(){original();};img.src=fr2.result;};fr2.onerror=function(){original();};fr2.readAsDataURL(f);}
 function deleteDoc(ri,slot){if(!confirm('Remove this document?'))return;var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Removing...';
   docsCall({action:'delete',rental_id:r.id,slot:slot},function(res){if(res&&res.ok){if(_docState[r.id])_docState[r.id].docs[slot]=null;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
 function openModal(ri){
