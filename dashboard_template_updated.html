@@ -96,14 +96,16 @@ section.view.show{display:block;animation:fade .35s ease}
 #tip .row{display:flex;justify-content:space-between;gap:18px;font-size:11.5px;margin:2px 0}
 #tip .row b{font-family:var(--mono);color:var(--txt)}
 #tip .cta{font-size:10px;color:var(--gold-br);margin-top:8px;text-align:center;border-top:1px solid var(--line);padding-top:6px}
-#ov{position:fixed;inset:0;background:rgba(4,4,6,.74);backdrop-filter:blur(3px);z-index:70;display:none;align-items:center;justify-content:center;padding:24px}
+#ov{position:fixed;inset:0;background:rgba(4,4,6,.74);backdrop-filter:blur(3px);z-index:70;display:none;align-items:center;justify-content:center;padding:18px}
 #ov.show{display:flex;animation:fade .2s}
-.modal{width:480px;max-width:100%;background:linear-gradient(180deg,var(--panel2),var(--bg2));border:1px solid var(--gold-dp);border-radius:18px;padding:0;overflow:hidden;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+.modal{width:780px;max-width:100%;max-height:calc(100vh - 36px);overflow-y:auto;overflow-x:hidden;background:linear-gradient(180deg,var(--panel2),var(--bg2));border:1px solid var(--gold-dp);border-radius:18px;padding:0;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+.modal::-webkit-scrollbar{width:10px}.modal::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px;border:3px solid transparent;background-clip:content-box}
 .modal .mh{padding:20px 24px 16px;border-bottom:1px solid var(--line);position:relative}
 .modal .mh .stripe{position:absolute;left:0;top:0;bottom:0;width:4px}
 .modal .mh .c1{font-family:var(--serif);font-size:25px;color:var(--gold-br);line-height:1.05}
 .modal .mh .c2{font-size:12px;color:var(--mut);margin-top:4px;font-family:var(--mono)}
-.modal .mb{padding:18px 24px 8px}
+.modal .mb{padding:18px 24px 8px;display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
+@media(max-width:620px){.modal .mb{grid-template-columns:1fr}}
 .mrow{display:flex;justify-content:space-between;gap:20px;padding:9px 0;border-bottom:1px solid #18181f;font-size:13px}
 .mrow .k{color:var(--mut);letter-spacing:.3px}
 .mrow .v{font-family:var(--mono);color:var(--txt);text-align:right}
