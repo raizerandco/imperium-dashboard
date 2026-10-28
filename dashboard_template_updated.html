@@ -247,7 +247,6 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
     <button data-v="rentals">Rentals</button>
     <button data-v="req" class="finonly">Requests <span id="reqBadge" class="reqbadge" style="display:none"></span></button>
     <button data-v="ins">Metrics</button>
-    <button data-v="rev">Data review</button>
     <button data-v="fin" class="fin finonly">Financials</button>
     <button data-v="brk" class="fin finonly">Brokers</button>
     <button data-v="b2b" class="fin finonly" style="display:none">B2B Prospecting</button>
@@ -293,11 +292,6 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
     </div>
   </section>
 
-  <section class="view" id="v-rev">
-    <div class="panel"><div class="ph"><div><h2>Data Quality</h2><div class="muted">Confirmed adjustments</div></div></div>
-      <div id="revBody"></div></div>
-  </section>
-
   <section class="view" id="v-fin">
     <div class="lockbar">
       <div class="sh">🔒</div>
@@ -326,6 +320,31 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
   <section class="view" id="v-b2b">
     <div class="panel"><div class="ph"><div><h2>B2B Partner Prospecting</h2><div class="muted">Partner CRM — international email cadence + US market. Live from database.</div></div></div>
       <div id="b2bBody"></div></div>
+  </section>
+
+  <section class="view" id="v-req">
+    <div class="panel">
+      <div class="ph"><div><h2>Requests</h2><div class="muted">Broker and client requests from the public form - accept to open a prefilled New Rental</div></div>
+        <button class="btn" onclick="loadRequests()">Refresh</button></div>
+      <div id="reqList" style="margin-top:8px"><div class="muted">Loading requests...</div></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-rentals">
+    <div class="panel">
+      <div class="ph"><div><h2>Rentals</h2><div class="muted">All rentals from the database - click a row for full details or open the signed contract</div></div></div>
+      <div style="padding:14px 16px">
+        <div class="rtbar">
+          <div class="muted" id="rentalsCount"></div>
+          <div class="rsearch">&#128269;<input id="rentalsSearch" placeholder="Search client, vehicle, agreement, plate..."></div>
+        </div>
+        <div class="rwrap">
+          <table class="rtbl"><thead><tr>
+            <th>Agr.</th><th>Client</th><th>Vehicle</th><th class="hidem">Period</th><th style="text-align:right">Total</th><th style="text-align:right">Actions</th>
+          </tr></thead><tbody id="rentalsBody"></tbody></table>
+        </div>
+      </div>
+    </div>
   </section>
 
   <div class="foot">IMPERIUM LUXURY MIAMI · compiled from the IMPERIUM spreadsheet and fleet-software records</div>
@@ -957,7 +976,7 @@ if(MODE==='operational'){
   var lb=document.querySelector('#v-fin .lockbar'); if(lb) lb.style.display='none';
 }
 applyCustEdits();applyBrokerEdits();renderKPIs();setRange(new Date(+TODAY-7*DAYMS),new Date(+TODAY+7*DAYMS));
-renderFleet();renderCust();renderInsights();renderReview();
+renderFleet();renderCust();renderInsights();
 if(MODE==='growth'){renderGoal();renderFinancials();renderBrokers();renderProspecting();}
 setTimeout(function(){fitDays(15);},60);
 maybeGate();
@@ -1020,13 +1039,6 @@ maybeGate();
 .reqcard .rqdoc img{width:120px;height:80px;object-fit:cover;border-radius:7px;border:1px solid var(--line2)}
 .reqcard .rqact{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
 </style>
-<section class="view" id="v-req">
-  <div class="panel">
-    <div class="ph"><div><h2>Requests</h2><div class="muted">Broker and client requests from the public form - accept to open a prefilled New Rental</div></div>
-      <button class="btn" onclick="loadRequests()">Refresh</button></div>
-    <div id="reqList" style="margin-top:8px"><div class="muted">Loading requests...</div></div>
-  </div>
-</section>
 <script>
 var REQ_API2='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/requests';
 var _reqs=[];
@@ -1094,23 +1106,6 @@ document.getElementById('tabs').addEventListener('click',function(e){var b=e.tar
 #v-rentals .r-btn.off{opacity:.4;cursor:not-allowed}
 @media(max-width:720px){#v-rentals .hidem{display:none}}
 </style>
-
-<section class="view" id="v-rentals">
-  <div class="panel">
-    <div class="ph"><div><h2>Rentals</h2><div class="muted">All rentals from the database - click a row for full details or open the signed contract</div></div></div>
-    <div style="padding:14px 16px">
-      <div class="rtbar">
-        <div class="muted" id="rentalsCount"></div>
-        <div class="rsearch">&#128269;<input id="rentalsSearch" placeholder="Search client, vehicle, agreement, plate..."></div>
-      </div>
-      <div class="rwrap">
-        <table class="rtbl"><thead><tr>
-          <th>Agr.</th><th>Client</th><th>Vehicle</th><th class="hidem">Period</th><th style="text-align:right">Total</th><th style="text-align:right">Actions</th>
-        </tr></thead><tbody id="rentalsBody"></tbody></table>
-      </div>
-    </div>
-  </div>
-</section>
 
 <script>
 (function(){
