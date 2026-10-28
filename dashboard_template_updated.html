@@ -98,14 +98,16 @@ section.view.show{display:block;animation:fade .35s ease}
 #tip .cta{font-size:10px;color:var(--gold-br);margin-top:8px;text-align:center;border-top:1px solid var(--line);padding-top:6px}
 #ov{position:fixed;inset:0;background:rgba(4,4,6,.74);backdrop-filter:blur(3px);z-index:70;display:none;align-items:center;justify-content:center;padding:18px}
 #ov.show{display:flex;animation:fade .2s}
-.modal{width:780px;max-width:100%;max-height:calc(100vh - 36px);overflow-y:auto;overflow-x:hidden;background:linear-gradient(180deg,var(--panel2),var(--bg2));border:1px solid var(--gold-dp);border-radius:18px;padding:0;box-shadow:0 30px 90px rgba(0,0,0,.7)}
+.modal{width:960px;max-width:100%;max-height:calc(100vh - 28px);overflow-y:auto;overflow-x:hidden;background:linear-gradient(180deg,var(--panel2),var(--bg2));border:1px solid var(--gold-dp);border-radius:18px;padding:0;box-shadow:0 30px 90px rgba(0,0,0,.7);columns:2;column-gap:32px}
 .modal::-webkit-scrollbar{width:10px}.modal::-webkit-scrollbar-thumb{background:var(--line2);border-radius:8px;border:3px solid transparent;background-clip:content-box}
+.modal>.mh,.modal>.mf{-webkit-column-span:all;column-span:all}
+.modal>.mb,.modal>.loc{-webkit-column-break-inside:avoid;break-inside:avoid}
+@media(max-width:620px){.modal{columns:1}}
 .modal .mh{padding:20px 24px 16px;border-bottom:1px solid var(--line);position:relative}
 .modal .mh .stripe{position:absolute;left:0;top:0;bottom:0;width:4px}
 .modal .mh .c1{font-family:var(--serif);font-size:25px;color:var(--gold-br);line-height:1.05}
 .modal .mh .c2{font-size:12px;color:var(--mut);margin-top:4px;font-family:var(--mono)}
-.modal .mb{padding:18px 24px 8px;display:grid;grid-template-columns:1fr 1fr;gap:0 28px}
-@media(max-width:620px){.modal .mb{grid-template-columns:1fr}}
+.modal .mb{padding:16px 24px 6px}
 .mrow{display:flex;justify-content:space-between;gap:20px;padding:9px 0;border-bottom:1px solid #18181f;font-size:13px}
 .mrow .k{color:var(--mut);letter-spacing:.3px}
 .mrow .v{font-family:var(--mono);color:var(--txt);text-align:right}
@@ -339,7 +341,7 @@ td.num,th.num{text-align:right;font-family:var(--mono)}
 .paidtg .lbl{font-size:11px;font-weight:700;letter-spacing:.5px}
 .paidtg.off .lbl{color:#e6866f}.paidtg.on .lbl{color:#7fd9a0}
 .brkedit{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.brkedit input{background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;font-family:var(--sans)}
+.brkedit input{min-width:0;width:100%;box-sizing:border-box;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:8px 10px;color:var(--txt);font-size:13px;font-family:var(--sans)}
 .brkedit button{grid-column:1/3;justify-self:start}
 </style>
 <div id="ov" onclick="if(event.target===this)closeModal()"><div class="modal" id="modal"></div></div>
@@ -453,7 +455,24 @@ function togglePaid(ev,id){ev.stopPropagation();var el=ev.currentTarget;var now=
 var BRK_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/set-broker';
 var BRK_KEY='imp-brk-7Rk93Qz2v';
 function beVal(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
-function saveBroker(ri){var r=DATA.rentals[ri];if(!r)return;var name=beVal('be_name'),email=beVal('be_email'),rateP=beVal('be_rate'),comm=beVal('be_comm'),addr=beVal('be_addr'),ein=beVal('be_ein');var rate=rateP!==''?(Number(rateP)/100):null,commission=comm!==''?Number(comm):null;var mm=document.getElementById('be_msg');if(mm)mm.textContent='Saving...';fetch(BRK_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:BRK_KEY,id:r.id,broker_name:name,broker_email:email,broker_rate:rate,broker_commission:commission,broker_address:addr,broker_ein:ein})}).then(function(x){return x.json();}).then(function(res){if(res&&res.ok){r.broker=name||null;r.broker_name=name||null;r.broker_email=email||null;r.broker_rate=rate;r.broker_commission=commission;r.broker_address=addr||null;r.broker_ein=ein||null;try{var ed=loadBrkEdits();ed[r.id]={name:name,email:email,rate:rate,commission:commission,address:addr,ein:ein};saveBrkEditsObj(ed);}catch(e){}if(mm)mm.textContent='Saved.';if(MODE==='growth'&&typeof renderBrokers==='function')renderBrokers();}else{if(mm)mm.textContent='Error: '+((res&&res.error)||'');}}).catch(function(){if(mm)mm.textContent='Network error';});}
+function saveBrokerFields(id,f,cb){
+  fetch(BRK_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},
+    body:JSON.stringify({key:BRK_KEY,id:id,broker_name:f.name,broker_email:f.email,broker_phone:f.phone,broker_rep:f.rep,broker_rate:f.rate,broker_commission:f.commission,broker_address:f.address,broker_ein:f.ein})})
+    .then(function(x){return x.json();}).then(function(res){
+      if(res&&res.ok){ var r=DATA.rentals.filter(function(x){return x.id===id;})[0];
+        if(r){ r.broker=f.name||null;r.broker_name=f.name||null;r.broker_email=f.email||null;r.broker_phone=f.phone||null;r.broker_rep=f.rep||null;r.broker_rate=f.rate;r.broker_commission=f.commission;r.broker_address=f.address||null;r.broker_ein=f.ein||null; }
+        try{var ed=loadBrkEdits();ed[id]={name:f.name,email:f.email,phone:f.phone,rep:f.rep,rate:f.rate,commission:f.commission,address:f.address,ein:f.ein};saveBrkEditsObj(ed);}catch(e){}
+        cb&&cb(true,res);
+      } else cb&&cb(false,res);
+    }).catch(function(){cb&&cb(false,{error:'network'});});
+}
+function saveBroker(ri){var r=DATA.rentals[ri];if(!r)return;
+  var rateP=beVal('be_rate'),comm=beVal('be_comm');
+  var f={name:beVal('be_name'),email:beVal('be_email'),phone:beVal('be_phone'),rep:beVal('be_rep'),address:beVal('be_addr'),ein:beVal('be_ein'),
+    rate:(rateP!==''?(Number(rateP)/100):null),commission:(comm!==''?Number(comm):null)};
+  var mm=document.getElementById('be_msg');if(mm)mm.textContent='Saving...';
+  saveBrokerFields(r.id,f,function(ok,res){ if(ok){ if(mm)mm.textContent='Saved.'; if(MODE==='growth'&&typeof renderBrokers==='function')renderBrokers(); } else { if(mm)mm.textContent='Error: '+((res&&res.error)||''); } });
+}
 /* ---- Identity documents (private bucket via gated edge function) ---- */
 var DOCS_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/docs';
 var DOC_LABELS={license:'Driver license',insurance:'Insurance',passport:'Passport'};
@@ -535,6 +554,8 @@ function openModal(ri){
       <div class="brkedit">
         <input id="be_name" placeholder="Broker name" value="${(r.broker||r.broker_name||'').replace(/"/g,'&quot;')}">
         <input id="be_email" placeholder="Email" value="${(r.broker_email||'').replace(/"/g,'&quot;')}">
+        <input id="be_phone" placeholder="Phone number" value="${(r.broker_phone||'').replace(/"/g,'&quot;')}">
+        <input id="be_rep" placeholder="Sales rep who prospected" value="${(r.broker_rep||'').replace(/"/g,'&quot;')}">
         <input id="be_rate" placeholder="Rate % e.g. 15" value="${r.broker_rate!=null?(r.broker_rate*100):''}">
         <input id="be_comm" placeholder="Commission $ (optional)" value="${r.broker_commission!=null?r.broker_commission:''}">
         <input id="be_addr" placeholder="Address" value="${(r.broker_address||'').replace(/"/g,'&quot;')}">
@@ -605,7 +626,7 @@ function applyCustEdits(){var ed=loadCustEdits();DATA.rentals.forEach(function(r
 /* ---- Broker edits (saved on this device so they show immediately, survive refresh, and persist until the publisher syncs) ---- */
 function loadBrkEdits(){try{return JSON.parse(localStorage.getItem('imp_brkedits')||'{}');}catch(e){return {};}}
 function saveBrkEditsObj(o){try{localStorage.setItem('imp_brkedits',JSON.stringify(o));}catch(e){}}
-function applyBrokerEdits(){var ed=loadBrkEdits();DATA.rentals.forEach(function(r){var e=ed[r.id];if(!e)return;r.broker=e.name||null;r.broker_name=e.name||null;r.broker_email=e.email||null;r.broker_rate=(e.rate!=null?e.rate:null);r.broker_commission=(e.commission!=null?e.commission:null);r.broker_address=e.address||null;r.broker_ein=e.ein||null;});}
+function applyBrokerEdits(){var ed=loadBrkEdits();DATA.rentals.forEach(function(r){var e=ed[r.id];if(!e)return;r.broker=e.name||null;r.broker_name=e.name||null;r.broker_email=e.email||null;r.broker_phone=e.phone||null;r.broker_rep=e.rep||null;r.broker_rate=(e.rate!=null?e.rate:null);r.broker_commission=(e.commission!=null?e.commission:null);r.broker_address=e.address||null;r.broker_ein=e.ein||null;});}
 function _esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function openCustEdit(name){
   var ed=loadCustEdits(),cur=ed[name]||{};
@@ -733,31 +754,56 @@ function renderFinancials(){
 }
 let revealed=(MODE==='growth');
 function commissionOf(r){ if(r.broker_commission!=null) return r.broker_commission; if(r.broker_rate!=null) return r.broker_rate*netOf(r); return 0; }
+var _brkGroups=[];
 function renderBrokers(){
   const groups={};
   DATA.rentals.forEach(r=>{ if(!r.broker) return;
-    if(!groups[r.broker]) groups[r.broker]={name:r.broker,email:r.broker_email,address:r.broker_address,ein:r.broker_ein,rows:[]};
+    if(!groups[r.broker]) groups[r.broker]={name:r.broker,rows:[]};
     groups[r.broker].rows.push(r); });
   const latest=g=>Math.max.apply(null,g.rows.map(r=>+r.s));
   const keys=Object.keys(groups).sort((a,b)=>latest(groups[b])-latest(groups[a]));
-  let h='';
-  if(!keys.length){ document.getElementById('brkBody').innerHTML='<div class="muted">No broker-attributed rentals yet. Send a rental with broker details and it will appear here.</div>'; return; }
+  let h=''; _brkGroups=[];
+  if(!keys.length){ document.getElementById('brkBody').innerHTML='<div class="muted">No broker-attributed rentals yet. Add broker details on a rental card and it will appear here.</div>'; return; }
   const grand=keys.reduce((s,k)=>s+groups[k].rows.reduce((a,r)=>a+commissionOf(r),0),0);
   h+=`<div class="kpis" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px">
     <div class="kpi"><div class="lbl">Brokers</div><div class="val g">${keys.length}</div></div>
     <div class="kpi"><div class="lbl">Broker-sourced rentals</div><div class="val">${keys.reduce((s,k)=>s+groups[k].rows.length,0)}</div></div>
     <div class="kpi"><div class="lbl">Total commissions due</div><div class="val g">${fmtUSD(grand)}</div></div></div>`;
-  keys.forEach(k=>{ const g=groups[k]; g.rows.sort((x,y)=>(+y.s)-(+x.s)); const tot=g.rows.reduce((s,r)=>s+commissionOf(r),0);
+  keys.forEach(function(k,gi){ const g=groups[k]; g.rows.sort((x,y)=>(+y.s)-(+x.s)); const lr=g.rows[0]; const tot=g.rows.reduce((s,r)=>s+commissionOf(r),0);
+    _brkGroups[gi]={ids:g.rows.map(function(r){return r.id;})};
+    const _e=function(v){return _esc(v);};
+    const meta=[lr.broker_email,lr.broker_phone,(lr.broker_rep?('Rep: '+lr.broker_rep):''),lr.broker_address,(lr.broker_ein?('EIN '+lr.broker_ein):'')].filter(Boolean).join(' · ');
     h+=`<div class="panel" style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px">
-        <div><div style="font-family:var(--serif);font-size:22px;color:var(--gold-br)">${g.name}</div>
-          <div class="muted" style="margin-top:3px">${[g.email,g.address,g.ein?('EIN '+g.ein):''].filter(Boolean).join(' · ')||''}</div></div>
-        <div style="text-align:right"><div class="muted" style="font-size:10px;letter-spacing:1px;text-transform:uppercase">Commission due</div>
-          <div style="font-family:var(--mono);font-size:20px;color:var(--gold-br)">${fmtUSD2(tot)}</div></div></div>
+        <div><div style="font-family:var(--serif);font-size:22px;color:var(--gold-br)">${_e(g.name)}</div>
+          <div class="muted" style="margin-top:3px">${meta||'<span style="color:var(--mut2)">No contact details yet</span>'}</div></div>
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+          <div><div class="muted" style="font-size:10px;letter-spacing:1px;text-transform:uppercase">Commission due</div>
+          <div style="font-family:var(--mono);font-size:20px;color:var(--gold-br)">${fmtUSD2(tot)}</div></div>
+          <button class="btn" onclick="toggleBrkEdit(${gi})">Edit broker</button></div></div>
+      <div class="brkedit" id="bge_${gi}" style="display:none;margin-bottom:14px">
+        <input id="bg_name_${gi}" placeholder="Broker name" value="${_e(lr.broker_name||lr.broker)}">
+        <input id="bg_email_${gi}" placeholder="Email" value="${_e(lr.broker_email)}">
+        <input id="bg_phone_${gi}" placeholder="Phone number" value="${_e(lr.broker_phone)}">
+        <input id="bg_rep_${gi}" placeholder="Sales rep who prospected" value="${_e(lr.broker_rep)}">
+        <input id="bg_addr_${gi}" placeholder="Address" value="${_e(lr.broker_address)}">
+        <input id="bg_ein_${gi}" placeholder="EIN" value="${_e(lr.broker_ein)}">
+        <button class="btn solid" onclick="saveBrokerGroup(${gi})">Save broker</button><span id="bg_msg_${gi}" class="muted" style="margin-left:8px"></span>
+      </div>
       <div style="overflow-x:auto"><table><thead><tr><th>Client</th><th>Vehicle</th><th>Rental dates</th><th class="num">Rental total</th><th class="num">Commission</th><th>Docs</th></tr></thead><tbody>
       ${g.rows.map(r=>`<tr><td>${r.cust}</td><td class="muted">${r.car?r.car.model:r.plate}</td><td class="muted">${fmtDate(r.s)} → ${fmtDate(r.e)}</td><td class="num">${r.total!=null?fmtUSD(r.total):'—'}</td><td class="num" style="color:var(--gold-br)">${fmtUSD2(commissionOf(r))}${(r.broker_rate!=null&&r.broker_commission==null)?` <span class="muted">(${(r.broker_rate*100).toFixed(0)}% net)</span>`:''}</td><td><button class="btn" style="padding:5px 10px;font-size:11px;white-space:nowrap" onclick="genBrokerDocs(${r._ri})">PDF + Excel</button></td></tr>`).join('')}
       </tbody></table></div></div>`; });
   document.getElementById('brkBody').innerHTML=h;
+}
+function toggleBrkEdit(gi){var e=document.getElementById('bge_'+gi);if(e)e.style.display=(e.style.display==='none'?'grid':'none');}
+function saveBrokerGroup(gi){var g=_brkGroups[gi];if(!g)return;
+  var val=function(p){var e=document.getElementById(p+'_'+gi);return e?(e.value||'').trim():'';};
+  var base={name:val('bg_name'),email:val('bg_email'),phone:val('bg_phone'),rep:val('bg_rep'),address:val('bg_addr'),ein:val('bg_ein')};
+  var mm=document.getElementById('bg_msg_'+gi);if(mm)mm.textContent='Saving...';
+  var ids=g.ids.slice(),done=0,fail=0; if(!ids.length)return;
+  ids.forEach(function(id){ var r=DATA.rentals.filter(function(x){return x.id===id;})[0];
+    var f={name:base.name,email:base.email,phone:base.phone,rep:base.rep,address:base.address,ein:base.ein,rate:(r?r.broker_rate:null),commission:(r?r.broker_commission:null)};
+    saveBrokerFields(id,f,function(ok){ if(ok)done++;else fail++; if(done+fail===ids.length){ if(mm)mm.textContent=fail?('Saved '+done+'/'+ids.length+' (some failed)'):'Saved.'; renderBrokers(); } }); });
 }
 function toggleReveal(){revealed=!revealed;
   document.getElementById('finWrap').classList.toggle('locked',!revealed);

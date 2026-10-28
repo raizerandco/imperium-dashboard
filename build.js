@@ -57,6 +57,7 @@ async function fetchAll(table) {
     phone: r.client_phone, email: r.client_email,
     deposit: r.deposit, price: r.daily_rate,
     broker: r.broker_name, broker_email: r.broker_email,
+    broker_phone: r.broker_phone, broker_rep: r.broker_rep,
     broker_commission: r.broker_commission, broker_rate: r.broker_rate,
     broker_address: r.broker_address, broker_ein: r.broker_ein,
     notes: r.notes, payment: r.payment_type,
