@@ -453,7 +453,7 @@ function togglePaid(ev,id){ev.stopPropagation();var el=ev.currentTarget;var now=
 var BRK_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/set-broker';
 var BRK_KEY='imp-brk-7Rk93Qz2v';
 function beVal(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
-function saveBroker(ri){var r=DATA.rentals[ri];if(!r)return;var name=beVal('be_name'),email=beVal('be_email'),rateP=beVal('be_rate'),comm=beVal('be_comm'),addr=beVal('be_addr'),ein=beVal('be_ein');var rate=rateP!==''?(Number(rateP)/100):null,commission=comm!==''?Number(comm):null;var mm=document.getElementById('be_msg');if(mm)mm.textContent='Saving...';fetch(BRK_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:BRK_KEY,id:r.id,broker_name:name,broker_email:email,broker_rate:rate,broker_commission:commission,broker_address:addr,broker_ein:ein})}).then(function(x){return x.json();}).then(function(res){if(res&&res.ok){r.broker=name||null;r.broker_name=name||null;r.broker_email=email||null;r.broker_rate=rate;r.broker_commission=commission;r.broker_address=addr||null;r.broker_ein=ein||null;if(mm)mm.textContent='Saved.';if(MODE==='growth'&&typeof renderBrokers==='function')renderBrokers();}else{if(mm)mm.textContent='Error: '+((res&&res.error)||'');}}).catch(function(){if(mm)mm.textContent='Network error';});}
+function saveBroker(ri){var r=DATA.rentals[ri];if(!r)return;var name=beVal('be_name'),email=beVal('be_email'),rateP=beVal('be_rate'),comm=beVal('be_comm'),addr=beVal('be_addr'),ein=beVal('be_ein');var rate=rateP!==''?(Number(rateP)/100):null,commission=comm!==''?Number(comm):null;var mm=document.getElementById('be_msg');if(mm)mm.textContent='Saving...';fetch(BRK_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:BRK_KEY,id:r.id,broker_name:name,broker_email:email,broker_rate:rate,broker_commission:commission,broker_address:addr,broker_ein:ein})}).then(function(x){return x.json();}).then(function(res){if(res&&res.ok){r.broker=name||null;r.broker_name=name||null;r.broker_email=email||null;r.broker_rate=rate;r.broker_commission=commission;r.broker_address=addr||null;r.broker_ein=ein||null;try{var ed=loadBrkEdits();ed[r.id]={name:name,email:email,rate:rate,commission:commission,address:addr,ein:ein};saveBrkEditsObj(ed);}catch(e){}if(mm)mm.textContent='Saved.';if(MODE==='growth'&&typeof renderBrokers==='function')renderBrokers();}else{if(mm)mm.textContent='Error: '+((res&&res.error)||'');}}).catch(function(){if(mm)mm.textContent='Network error';});}
 /* ---- Identity documents (private bucket via gated edge function) ---- */
 var DOCS_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/docs';
 var DOC_LABELS={license:'Driver license',insurance:'Insurance',passport:'Passport'};
@@ -602,6 +602,10 @@ function custData(){const m={};DATA.rentals.forEach(r=>{const k=r.cust;
 function loadCustEdits(){try{return JSON.parse(localStorage.getItem('imp_custedits')||'{}');}catch(e){return {};}}
 function saveCustEditsObj(o){try{localStorage.setItem('imp_custedits',JSON.stringify(o));}catch(e){}}
 function applyCustEdits(){var ed=loadCustEdits();DATA.rentals.forEach(function(r){var e=ed[r.cust];if(!e)return;if(e.phone)r.phone=e.phone;if(e.email)r.email=e.email;if(e.country){r.country=e.country;r.nationality=e.country;}});}
+/* ---- Broker edits (saved on this device so they show immediately, survive refresh, and persist until the publisher syncs) ---- */
+function loadBrkEdits(){try{return JSON.parse(localStorage.getItem('imp_brkedits')||'{}');}catch(e){return {};}}
+function saveBrkEditsObj(o){try{localStorage.setItem('imp_brkedits',JSON.stringify(o));}catch(e){}}
+function applyBrokerEdits(){var ed=loadBrkEdits();DATA.rentals.forEach(function(r){var e=ed[r.id];if(!e)return;r.broker=e.name||null;r.broker_name=e.name||null;r.broker_email=e.email||null;r.broker_rate=(e.rate!=null?e.rate:null);r.broker_commission=(e.commission!=null?e.commission:null);r.broker_address=e.address||null;r.broker_ein=e.ein||null;});}
 function _esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
 function openCustEdit(name){
   var ed=loadCustEdits(),cur=ed[name]||{};
@@ -900,7 +904,7 @@ if(MODE==='operational'){
   var fw=document.getElementById('finWrap'); if(fw) fw.classList.remove('locked');
   var lb=document.querySelector('#v-fin .lockbar'); if(lb) lb.style.display='none';
 }
-applyCustEdits();renderKPIs();setRange(new Date(+TODAY-7*DAYMS),new Date(+TODAY+7*DAYMS));
+applyCustEdits();applyBrokerEdits();renderKPIs();setRange(new Date(+TODAY-7*DAYMS),new Date(+TODAY+7*DAYMS));
 renderFleet();renderCust();renderInsights();renderReview();
 if(MODE==='growth'){renderGoal();renderFinancials();renderBrokers();renderProspecting();}
 setTimeout(function(){fitDays(15);},60);
