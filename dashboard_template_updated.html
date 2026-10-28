@@ -476,14 +476,24 @@ function renderDocsBody(ri){var r=DATA.rentals[ri];var body=document.getElementB
   var slots=DOC_SETS[type]||[];var slotsHtml='';
   if(!type){slotsHtml='<div class="muted" style="margin-top:4px">Select the client type to see the required documents.</div>';}
   else{slotsHtml='<div class="docgrid">'+slots.map(function(sl){var url=st.docs[sl];var prev=url&&/\.(jpe?g|png|webp|gif)(\?|$)/i.test(url);
-     var thumb=url?(prev?'<a href="'+url+'" target="_blank" rel="noopener"><img class="docthumb" src="'+url+'" alt="'+DOC_LABELS[sl]+'"></a>':'<a class="docpdf" href="'+url+'" target="_blank" rel="noopener">Open file</a>'):'<div class="docthumb empty">No file</div>';
-     return '<div class="docslot"><div class="dl">'+DOC_LABELS[sl]+'</div>'+thumb
-       +'<label class="btn upl">'+(url?'Replace':'Upload')+'<input type="file" accept="image/*,application/pdf" style="display:none" onchange="uploadDoc(event,'+ri+',\''+sl+'\')"></label>'
+     var thumb=url?(prev?'<a href="'+url+'" target="_blank" rel="noopener"><img class="docthumb" src="'+url+'" alt="'+DOC_LABELS[sl]+'"></a>':'<a class="docpdf" href="'+url+'" target="_blank" rel="noopener">Open file</a>'):'<div class="docthumb empty">Drop file or Upload</div>';
+     return '<div class="docslot" data-slot="'+sl+'"><div class="dl">'+DOC_LABELS[sl]+'</div>'+thumb
+       +'<label class="btn upl">'+(url?'Replace':'Upload')+'<input type="file" accept=".jpg,.jpeg,.png,.webp,.heic,.heif,.pdf,image/*,application/pdf" style="display:none" onchange="uploadDoc(event,'+ri+',\''+sl+'\')"></label>'
        +(url?'<button class="btn" onclick="deleteDoc('+ri+',\''+sl+'\')">Remove</button>':'')+'</div>';}).join('')+'</div>';}
-  body.innerHTML=chooser+slotsHtml+'<div id="docmsg" class="muted" style="margin-top:8px"></div>';}
+  body.innerHTML=chooser+slotsHtml+'<div id="docmsg" class="muted" style="margin-top:8px"></div>';
+  Array.prototype.forEach.call(body.querySelectorAll('.docslot'),function(el){var sl=el.getAttribute('data-slot');
+    el.addEventListener('dragover',function(e){e.preventDefault();e.stopPropagation();el.classList.add('drag');});
+    el.addEventListener('dragenter',function(e){e.preventDefault();e.stopPropagation();el.classList.add('drag');});
+    el.addEventListener('dragleave',function(e){el.classList.remove('drag');});
+    el.addEventListener('drop',function(e){e.preventDefault();e.stopPropagation();el.classList.remove('drag');var f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0];if(f)uploadDocFile(f,ri,sl);});});}
+(function(){ if(window._docDropGuard)return; window._docDropGuard=1;
+  window.addEventListener('dragover',function(e){ e.preventDefault(); },false);
+  window.addEventListener('drop',function(e){ if(!(e.target&&e.target.closest&&e.target.closest('.docslot'))) e.preventDefault(); },false);
+})();
 function setDocType(ri,type){var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Saving...';
   docsCall({action:'set_type',rental_id:r.id,client_type:type},function(res){if(res&&res.ok){_docState[r.id]=_docState[r.id]||{docs:{}};_docState[r.id].client_type=type;r.client_type=type;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
-function uploadDoc(ev,ri,slot){var f=ev.target.files&&ev.target.files[0];ev.target.value='';if(!f)return;var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Uploading...';
+function uploadDoc(ev,ri,slot){var f=ev.target.files&&ev.target.files[0];ev.target.value='';uploadDocFile(f,ri,slot);}
+function uploadDocFile(f,ri,slot){if(!f)return;var r=DATA.rentals[ri];var msg=document.getElementById('docmsg');if(msg)msg.textContent='Uploading...';
   function send(ct,b64,name){docsCall({action:'upload',rental_id:r.id,slot:slot,content_type:ct,data:b64,filename:name},function(res){
     if(res&&res.ok){_docState[r.id]=_docState[r.id]||{docs:{}};_docState[r.id].docs[slot]=res.url;renderDocsBody(ri);}else{if(msg)msg.textContent='Error: '+((res&&res.error)||'');}});}
   // downscale large JPEG/PNG; otherwise (HEIC, PDF, small images, any failure) send original bytes
@@ -1261,7 +1271,8 @@ nav.tabs button.active{color:var(--gold-br);background:var(--gold-soft);box-shad
 .doctype{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
 .docgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 @media(max-width:560px){.docgrid{grid-template-columns:1fr}}
-.docslot{display:flex;flex-direction:column;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px}
+.docslot{display:flex;flex-direction:column;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:12px;transition:border-color .15s,box-shadow .15s}
+.docslot.drag{border-color:var(--gold);box-shadow:inset 0 0 0 2px var(--gold-soft)}
 .docslot .dl{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--mut)}
 .docthumb{display:block;width:100%;height:150px;border-radius:9px;object-fit:cover;background:var(--bg2);border:1px solid var(--line2)}
 .docthumb.empty{display:grid;place-items:center;color:var(--mut2);font-size:12px}
