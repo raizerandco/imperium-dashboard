@@ -452,6 +452,10 @@ var PAID_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJl
 function paidState(r){try{var v=localStorage.getItem('paid_'+r.id);if(v!==null)return v==='1';}catch(e){}return !!r.paid;}
 function paidToggleHtml(r){var on=paidState(r);return '<span class="paidtg '+(on?'on':'off')+'" onclick="togglePaid(event,'+r.id+')" title="Toggle paid"><span class="dot"></span><span class="lbl">'+(on?'PAID':'NOT PAID')+'</span></span>';}
 function togglePaid(ev,id){ev.stopPropagation();var el=ev.currentTarget;var now=!el.classList.contains('on');el.classList.toggle('on',now);el.classList.toggle('off',!now);var l=el.querySelector('.lbl');if(l)l.textContent=now?'PAID':'NOT PAID';try{localStorage.setItem('paid_'+id,now?'1':'0');}catch(e){}fetch(PAID_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:PAID_KEY,id:id,paid:now})}).catch(function(){});}
+/* ---- Broker payment toggle (have we paid the broker?) ---- */
+function brokerPaidState(name,g){try{var v=localStorage.getItem('brkpaid_'+name);if(v!==null)return v==='1';}catch(e){}return !!(g&&g.rows&&g.rows.length&&g.rows.every(function(r){return !!r.broker_paid;}));}
+function brokerPaidToggleHtml(gi,on){return '<span class="paidtg '+(on?'on':'off')+'" onclick="toggleBrokerPaid(event,'+gi+')" title="Have we paid this broker?"><span class="dot"></span><span class="lbl">'+(on?'PAID':'NOT PAID')+'</span></span>';}
+function toggleBrokerPaid(ev,gi){ev.stopPropagation();var g=_brkGroups[gi];if(!g)return;var el=ev.currentTarget;var now=!el.classList.contains('on');el.classList.toggle('on',now);el.classList.toggle('off',!now);var l=el.querySelector('.lbl');if(l)l.textContent=now?'PAID':'NOT PAID';try{localStorage.setItem('brkpaid_'+g.name,now?'1':'0');}catch(e){}g.ids.forEach(function(id){var r=DATA.rentals.filter(function(x){return x.id===id;})[0];if(r)r.broker_paid=now;fetch(PAID_API,{method:'POST',headers:{'apikey':PAID_ANON,'Authorization':'Bearer '+PAID_ANON,'Content-Type':'application/json'},body:JSON.stringify({key:PAID_KEY,id:id,field:'broker_paid',paid:now})}).catch(function(){});});}
 var BRK_API='https://mactclkjxhczmysjsakf.supabase.co/functions/v1/set-broker';
 var BRK_KEY='imp-brk-7Rk93Qz2v';
 function beVal(id){var e=document.getElementById(id);return e?(e.value||'').trim():'';}
@@ -770,16 +774,18 @@ function renderBrokers(){
     <div class="kpi"><div class="lbl">Broker-sourced rentals</div><div class="val">${keys.reduce((s,k)=>s+groups[k].rows.length,0)}</div></div>
     <div class="kpi"><div class="lbl">Total commissions due</div><div class="val g">${fmtUSD(grand)}</div></div></div>`;
   keys.forEach(function(k,gi){ const g=groups[k]; g.rows.sort((x,y)=>(+y.s)-(+x.s)); const lr=g.rows[0]; const tot=g.rows.reduce((s,r)=>s+commissionOf(r),0);
-    _brkGroups[gi]={ids:g.rows.map(function(r){return r.id;})};
+    _brkGroups[gi]={ids:g.rows.map(function(r){return r.id;}),name:g.name};
+    const bpaid=brokerPaidState(g.name,g);
     const _e=function(v){return _esc(v);};
     const meta=[lr.broker_email,lr.broker_phone,(lr.broker_rep?('Rep: '+lr.broker_rep):''),lr.broker_address,(lr.broker_ein?('EIN '+lr.broker_ein):'')].filter(Boolean).join(' · ');
     h+=`<div class="panel" style="margin-bottom:14px">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;margin-bottom:12px">
         <div><div style="font-family:var(--serif);font-size:22px;color:var(--gold-br)">${_e(g.name)}</div>
           <div class="muted" style="margin-top:3px">${meta||'<span style="color:var(--mut2)">No contact details yet</span>'}</div></div>
-        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:8px">
+        <div style="text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:10px">
           <div><div class="muted" style="font-size:10px;letter-spacing:1px;text-transform:uppercase">Commission due</div>
           <div style="font-family:var(--mono);font-size:20px;color:var(--gold-br)">${fmtUSD2(tot)}</div></div>
+          <div style="display:flex;align-items:center;gap:10px"><span class="muted" style="font-size:10px;letter-spacing:1px;text-transform:uppercase">Broker payment</span>${brokerPaidToggleHtml(gi,bpaid)}</div>
           <button class="btn" onclick="toggleBrkEdit(${gi})">Edit broker</button></div></div>
       <div class="brkedit" id="bge_${gi}" style="display:none;margin-bottom:14px">
         <input id="bg_name_${gi}" placeholder="Broker name" value="${_e(lr.broker_name||lr.broker)}">

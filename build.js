@@ -59,7 +59,7 @@ async function fetchAll(table) {
     broker: r.broker_name, broker_email: r.broker_email,
     broker_phone: r.broker_phone, broker_rep: r.broker_rep,
     broker_commission: r.broker_commission, broker_rate: r.broker_rate,
-    broker_address: r.broker_address, broker_ein: r.broker_ein,
+    broker_address: r.broker_address, broker_ein: r.broker_ein, broker_paid: r.broker_paid ?? false,
     notes: r.notes, payment: r.payment_type,
     signed_pdf_url: r.signed_pdf_url ?? null,
     id: r.id, delivery_time: r.delivery_time ?? null, pickup_time: r.pickup_time ?? null,
