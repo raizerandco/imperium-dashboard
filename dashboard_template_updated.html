@@ -995,6 +995,7 @@ function viewReqDocs(id){var box=document.getElementById('rqdocs_'+id);if(!box)r
     box.innerHTML=html||'<div class="muted">No documents uploaded.</div>';});}
 function acceptReq(id){ openRentalForm(id); }
 function dismissReq(id){if(!confirm('Dismiss this request?'))return;reqCall({action:'set_status',id:id,status:'dismissed'},function(res){if(res&&res.ok){_reqs=_reqs.filter(function(x){return x.id!==id;});updateReqBadge(_reqs.length);renderRequests();}});}
+if(MODE==='operational'){var _vreq=document.getElementById('v-req');if(_vreq)_vreq.remove();}
 document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('button');if(b&&b.dataset.v==='req')loadRequests();});
 (function(){ if(typeof window.closeRentalForm==='function'){ var _oc=window.closeRentalForm; window.closeRentalForm=function(){ _oc(); if(MODE==='growth') setTimeout(loadRequests,400); }; } })();
 (function badgeInit(){ if(MODE!=='growth')return; var tries=0; var t=setInterval(function(){tries++;
