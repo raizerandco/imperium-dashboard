@@ -584,8 +584,8 @@ function openModal(ri){
       ${natOf(r)?`<div class="mrow"><span class="k">Customer country</span><span class="v">${natOf(r)}</span></div>`:''}
     </div>
     <div class="loc"><div class="lh">Delivery &amp; Pick-up</div>
-      <div class="lp"><div class="pin">▸</div><div><div class="lk">Delivery location${r.delivery_time?' - '+r.delivery_time:''}</div>${del}</div></div>
-      <div class="lp"><div class="pin">◂</div><div><div class="lk">Pick-up location${r.pickup_time?' - '+r.pickup_time:''}</div>${pick}</div></div>
+      <div class="lp"><div class="pin">▸</div><div><div class="lk">Delivery location - ${r.delivery_time||'10:00 AM'}</div>${del}</div></div>
+      <div class="lp"><div class="pin">◂</div><div><div class="lk">Pick-up location - ${r.pickup_time||'5:30 PM'}</div>${pick}</div></div>
     </div>
     ${(r.phone||r.email)?`<div class="loc" style="padding-top:0"><div class="lh">Contact</div>
       ${r.phone?`<div class="lp"><div class="pin">☏</div><div><div class="lk">Phone</div><div class="lv">${r.phone}</div></div></div>`:''}
