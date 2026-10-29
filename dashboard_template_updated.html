@@ -862,8 +862,11 @@ function repOptions(cur){cur=(cur||'').trim();var opts=['Cesar','Louis','Angelos
 /* ---------- MKT DEPT (sales-rep commissions) ---------- */
 /* Monthly draw against commission: rate is tiered on the rep's monthly NET, +0.5% per $25k band from 6% to a 10% cap at $200k, applied to the whole net. */
 var MKT_REPS=['Cesar','Louis','Angelos'];
+var MKT_REP_BASE={Cesar:0.07}; /* per-rep minimum rate; others default to 6% */
 var MKT_TIERS=[[0,0.06],[25000,0.065],[50000,0.07],[75000,0.075],[100000,0.08],[125000,0.085],[150000,0.09],[175000,0.095],[200000,0.10]];
-function repRate(net){ if(net>=200000)return 0.10; if(net<=0)return 0.06; return 0.06+Math.floor(net/25000)*0.005; }
+function repRate(net,repKey){ var base=(repKey&&MKT_REP_BASE[repKey]!=null)?MKT_REP_BASE[repKey]:0.06;
+  var tiered=net>=200000?0.10:(net<=0?base:0.06+Math.floor(net/25000)*0.005);
+  return Math.max(base,tiered); }
 function repTierLabel(net){ if(net>=200000)return '$200,000+'; var lo=net<=0?0:Math.floor(net/25000)*25000; return '$'+lo.toLocaleString('en-US')+' – '+(lo+25000).toLocaleString('en-US'); }
 function mktRepKey(r){var v=(r.broker_rep||'').trim();if(!v)return 'Other';var low=v.toLowerCase();
   for(var i=0;i<MKT_REPS.length;i++){if(low===MKT_REPS[i].toLowerCase()||low.indexOf(MKT_REPS[i].toLowerCase())===0)return MKT_REPS[i];}
@@ -883,7 +886,7 @@ function renderMkt(){
   DATA.rentals.forEach(function(r){ if(!r.broker)return; if(!isAll && mktMonthOf(r)!==month)return; var k=mktRepKey(r); buckets[k].rows.push(r); });
   var order=MKT_REPS.concat(['HOUSE']); if(buckets['Other'].rows.length)order.push('Other');
   var totNet=0,totComm=0,totDeals=0,activeReps=0;
-  MKT_REPS.forEach(function(k){ var b=buckets[k]; var net=b.rows.reduce(function(s,r){return s+netOf(r);},0); totNet+=net; totComm+=net*repRate(net); totDeals+=b.rows.length; if(b.rows.length)activeReps++; });
+  MKT_REPS.forEach(function(k){ var b=buckets[k]; var net=b.rows.reduce(function(s,r){return s+netOf(r);},0); totNet+=net; totComm+=net*repRate(net,k); totDeals+=b.rows.length; if(b.rows.length)activeReps++; });
   var months=mktMonths();
   var sel='<select class="mktmonth" onchange="mktSetMonth(this.value)">'+months.map(function(m){return '<option value="'+m+'"'+(m===month?' selected':'')+'>'+mlabel(m)+'</option>';}).join('')+'<option value="all"'+(isAll?' selected':'')+'>All time</option></select>';
   var h='';
@@ -897,7 +900,7 @@ function renderMkt(){
   order.forEach(function(k){ var b=buckets[k];
     var net=b.rows.reduce(function(s,r){return s+netOf(r);},0);
     var isHouse=(k==='HOUSE'),isOther=(k==='Other'),isRep=!isHouse&&!isOther;
-    var rate=isRep?repRate(net):0; var comm=net*rate;
+    var rate=isRep?repRate(net,k):0; var comm=net*rate;
     var title=isHouse?('HOUSE <span class="mkttag">direct · no payout</span>'):(isOther?'Unassigned <span class="mkttag">assign a rep</span>':_esc(b.name));
     h+='<div class="panel mktcard" style="margin-bottom:14px">'
       +'<div class="mkthead">'
