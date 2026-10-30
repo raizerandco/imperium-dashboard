@@ -852,26 +852,26 @@ function saveBrokerGroup(gi){var g=_brkGroups[gi];if(!g)return;
     saveBrokerFields(id,f,function(ok){ if(ok)done++;else fail++; if(done+fail===ids.length){ if(mm)mm.textContent=fail?('Saved '+done+'/'+ids.length+' (some failed)'):'Saved.'; renderBrokers(); } }); });
 }
 /* ---------- Sales-rep dropdown options ---------- */
-function repOptions(cur){cur=(cur||'').trim();var opts=['Cesar','Louis','Angelos','HOUSE'];var low=cur.toLowerCase();
-  var matched=opts.filter(function(o){return o.toLowerCase()===low;})[0];
+function repOptions(cur){cur=(cur||'').trim();var opts=['Cesar','Louis','Angelos','HOUSE'];var canon=repCanon(cur);
   var h='<option value=""'+(!cur?' selected':'')+'>— Sales rep —</option>';
-  opts.forEach(function(o){h+='<option value="'+o+'"'+((matched&&matched===o)?' selected':'')+'>'+o+'</option>';});
-  if(cur&&!matched){h+='<option value="'+_esc(cur)+'" selected>'+_esc(cur)+'</option>';}
+  opts.forEach(function(o){h+='<option value="'+o+'"'+((canon&&canon===o)?' selected':'')+'>'+o+'</option>';});
+  if(cur&&!canon){h+='<option value="'+_esc(cur)+'" selected>'+_esc(cur)+'</option>';}
   return h;}
 
 /* ---------- MKT DEPT (sales-rep commissions) ---------- */
 /* Monthly draw against commission: rate is tiered on the rep's monthly NET, +0.5% per $25k band from 6% to a 10% cap at $200k, applied to the whole net. */
 var MKT_REPS=['Cesar','Louis','Angelos'];
 var MKT_REP_BASE={Cesar:0.07}; /* per-rep minimum rate; others default to 6% */
+var MKT_ALIASES={cesar:'Cesar',cezar:'Cesar',louis:'Louis',luis:'Louis',luiz:'Louis',angelos:'Angelos',angelo:'Angelos',angel:'Angelos'};
+function repCanon(v){v=(v||'').trim().toLowerCase();if(!v)return '';if(v==='house')return 'HOUSE';if(MKT_ALIASES[v])return MKT_ALIASES[v];
+  for(var i=0;i<MKT_REPS.length;i++){var c=MKT_REPS[i].toLowerCase();if(v===c||v.indexOf(c)===0||c.indexOf(v)===0)return MKT_REPS[i];}
+  return '';}
 var MKT_TIERS=[[0,0.06],[25000,0.065],[50000,0.07],[75000,0.075],[100000,0.08],[125000,0.085],[150000,0.09],[175000,0.095],[200000,0.10]];
 function repRate(net,repKey){ var base=(repKey&&MKT_REP_BASE[repKey]!=null)?MKT_REP_BASE[repKey]:0.06;
   var tiered=net>=200000?0.10:(net<=0?base:0.06+Math.floor(net/25000)*0.005);
   return Math.max(base,tiered); }
 function repTierLabel(net){ if(net>=200000)return '$200,000+'; var lo=net<=0?0:Math.floor(net/25000)*25000; return '$'+lo.toLocaleString('en-US')+' – '+(lo+25000).toLocaleString('en-US'); }
-function mktRepKey(r){var v=(r.broker_rep||'').trim();if(!v)return 'Other';var low=v.toLowerCase();
-  for(var i=0;i<MKT_REPS.length;i++){if(low===MKT_REPS[i].toLowerCase()||low.indexOf(MKT_REPS[i].toLowerCase())===0)return MKT_REPS[i];}
-  if(low==='house')return 'HOUSE';
-  return 'Other';}
+function mktRepKey(r){return repCanon(r.broker_rep)||'Other';}
 function mktMonthOf(r){return String(r.start||'').slice(0,7);}
 function mktMonths(){var set={};DATA.rentals.forEach(function(r){if(!r.broker)return;var m=mktMonthOf(r);if(m)set[m]=1;});
   var d=new Date();set[d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')]=1;return Object.keys(set).sort().reverse();}
